@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <!-- <script src="./el.js"></script> -->
+    <script src="./el3.js"></script>
+    <style>
+        html,body{
+            height: 100%;
+            overflow: hidden;
+        }
+        #content{
+            margin: 100px auto;
+            width: 30%;
+            height: 60%;
+            /* border: 1px solid; */
+        }
+        #test{
+            border: 1px solid;
+            width: 100px;
+            height: 100px;
+            background-image: url("./images/watch.jpg");
+            background-size: 100% 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="content"></div>
+    <div id="test"></div>
+</body>
+<script>
+    init_el_wrap(document.getElementById("content"),['images/watch.jpg'])
+</script>
+</html>

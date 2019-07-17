@@ -1,0 +1,33 @@
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  background-color: aquamarine;
+}
+
+#header {
+  border: 2px solid yellow;
+  margin: 20px auto;
+  width: 80%;
+  height: 20%;
+}
+
+#header h1 {
+  text-align: center;
+}
+
+#content {
+  width: 80%;
+  margin: 20px auto;
+  height: 40%;
+  border: 2px salmon solid;
+}
+
+#footer {
+  width: 80%;
+  margin: 20px auto;
+  border: 2px solid red;
+  height: 20%;
+}
+/*# sourceMappingURL=style.css.map */
