@@ -142,7 +142,7 @@ function init_el_wrap(content,img_arr){
         e.target.style.transform = `translate3d(
             ${ content_center.x }px,
             ${ content_center.y }px,
-            ${ content_height/4 }px)`
+            ${ content_height/2 }px)`
     }
 
     /**
@@ -178,7 +178,7 @@ function init_el_wrap(content,img_arr){
             let sinA = aY / aXY
             let cosA = aX / aXY
 
-            let random_len = content_width/4 + sub_content_width*Math.random()
+            let random_len = content_width/3 + sub_content_width*Math.random()
             let random_x = random_len*cosA
             let random_y = random_len*sinA
 
