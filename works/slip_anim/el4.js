@@ -16,14 +16,16 @@ function init_el_wrap(content,img_arr){
     let sub_content_width = ( content_width - sub_content_space/k ) * k       // 子容器宽度
     let sub_content_height = ( content_height -sub_content_space/k ) * k     // 子容器高度
                                                     // 子容器的对角线半径
-    let sub_content_radius = 5*Math.sqrt(Math.pow(sub_content_height/2,2) + Math.pow(sub_content_width/2,2))
+    let sub_content_radius = 4*Math.sqrt(Math.pow(sub_content_height/2,2) + Math.pow(sub_content_width/2,2))
     let content_center = {                          // 容器中心位置 ( 相对于三维偏移 )
         x : content_width / 2 - sub_content_width / 2,
         y : content_height / 2 - sub_content_height / 2
     }
-    let sub_content_left =  - content_width    // 子容器横向排放的其实坐标做边界
+    let sub_content_left =  - content_width     // 子容器横向排放的其实坐标做边界
     let sub_content_right = 2 * content_width
-    let rect_animate_timer
+    let rect_animate_timer                      // 横向运动的timer
+    let circle_sub_animate_timer                // 环绕运动的timer
+    let involved_sub_list = []                  // 当前受到影响的子容器列表
     let content_perspective = 500
     content.style.position = "relative"
     content.style.perspective = content_perspective + "px"
@@ -106,6 +108,7 @@ function init_el_wrap(content,img_arr){
         cancelAnimationFrame(rect_animate_timer)            //  停止横向动作
 
         e.target.onclick = function(){                      // 设置恢复的动作监听
+            cancelAnimationFrame(circle_sub_animate_timer)  // 停止环形运动
             e.target.style.zIndex = 0
             e.target.style.transition = ""                  
             e.target.style.transform = selected_target_tramsform
@@ -145,7 +148,7 @@ function init_el_wrap(content,img_arr){
             ${ content_height/3 }px)`
     }
    
-    
+    // 控制滑动商品列表
     document.onmousedown = content_event
     function content_event(down_event){
         var down_x = down_event.clientX
@@ -173,7 +176,7 @@ function init_el_wrap(content,img_arr){
             document.onmouseup = null
         }
     }
-
+    // 控制滑动商品列表 ( 移动端适配 )
     document.ontouchstart = content_touch_event
     function content_touch_event(down_event){
         var down_x = down_event.changedTouches[0].clientX
@@ -205,11 +208,12 @@ function init_el_wrap(content,img_arr){
      * 返回当前选中某个子容器时四周受到影响的其他子容器
      */
     function involved_subs(center,rect_index){
-        let involved_sub_list = []
+        involved_sub_list = []
         rect_anim_position.forEach(function(item,index){
             if(rect_index !== index){
                 // item.element.onclick = null     // 在已经选中一个元素的时候清除其他子容器的事件监听
                 item.element.onclick = function(){
+                    cancelAnimationFrame(circle_sub_animate_timer)  // 停止环形运动
                     rect_anim_position.forEach(function(item){
                         item.element.onclick = sub_content_click    // 重新设置事件监听
                     })
@@ -248,7 +252,7 @@ function init_el_wrap(content,img_arr){
      * 将受到影响的子容器向四周移动
      */
     function move_involved_subs(center,involved_sub_list){
-        
+        // 将受到波及的子容器向四周环形移动
         involved_sub_list.forEach(function(item){
             let aX = Math.abs(item.x - center.x)
             let aY = Math.abs(item.y - center.y)
@@ -263,30 +267,74 @@ function init_el_wrap(content,img_arr){
 
             item.element.style.transition = "0.5s"
             if(item.x >= center.x && item.y >= center.y){       // 右下角
+                item.cx = center.x + random_x
+                item.cy = center.y + random_y
                 item.element.style.transform = `translate3d(
                     ${ center.x + random_x }px,
                     ${ center.y + random_y }px,
                     -${ content_perspective/2 }px)`
             }else if(item.x >= center.x && item.y < center.y){  // 右上角
+                item.cx = center.x + random_x
+                item.cy = center.y - random_y
                 item.element.style.transform = `translate3d(
                     ${ center.x + random_x }px,
                     ${ center.y - random_y }px,
                     -${ content_perspective/2 }px)`
             }else if(item.x < center.x && item.y >= center.y){  // 左下角
+                item.cx = center.x - random_x
+                item.cy = center.y + random_y
                 item.element.style.transform = `translate3d(
                     ${ center.x - random_x }px,
                     ${ center.y + random_y }px,
                     -${ content_perspective/2 }px)`
             }else{                                              // 左上角
+                item.cx = center.x - random_x
+                item.cy = center.y - random_y
                 item.element.style.transform = `translate3d(
                     ${ center.x - random_x }px,
                     ${ center.y - random_y }px,
                     -${ content_perspective/2 }px)`
             }
+            
         })
-        
+
+        // 环形子容器做环形运动
+        setTimeout(function(){
+            circle_sub_animate()
+        },550)
     }
 
+    function circle_sub_animate(){
+        var mx = 1
+        involved_sub_list.forEach(function(item){
+            var x1 = item.cx - content_center.x
+            var y1 = item.cy - content_center.y
+            // var my = Math.sqrt(Math.pow(y1,2) + 2*x1*mx)
+            if(x1 > 0 && y1 < 0){       // 右上
+                var my = y1 + Math.sqrt(Math.pow(y1,2) + 2*x1*mx - Math.pow(mx,2))
+                item.cx = item.cx - mx
+                item.cy = item.cy - my
+            }else if(x1 < 0 && y1 < 0){ // 左上
+                var my = y1 + Math.sqrt(Math.pow(y1,2) - 2*x1*mx - Math.pow(mx,2))
+                item.cx = item.cx - mx
+                item.cy = item.cy + my
+            }else if(x1 < 0 && y1 > 0){ // 左下
+                var my = -y1 + Math.sqrt(Math.pow(y1,2) - 2*x1*mx - Math.pow(mx,2))
+                item.cx = item.cx + mx
+                item.cy = item.cy + my
+            }else{                      // 右下
+                var my = -y1 + Math.sqrt(Math.pow(y1,2) + 2*x1*mx - Math.pow(mx,2))
+                item.cx = item.cx + mx
+                item.cy = item.cy - my
+            }
+            item.element.style.transform = `translate3d(
+                ${ item.cx }px,
+                ${ item.cy }px,
+                -${ content_perspective/2 }px)`
+        })
+        circle_sub_animate_timer = requestAnimationFrame(circle_sub_animate)
+    }
+    
     function mixin_img_arr(img_arr,sub_content_count){    // 控制传入的图片数组
         if(img_arr.length > sub_content_count){
             return img_arr.slice(0,sub_content_count)
