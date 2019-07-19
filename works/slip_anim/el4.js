@@ -142,18 +142,15 @@ function init_el_wrap(content,img_arr){
         e.target.style.transform = `translate3d(
             ${ content_center.x }px,
             ${ content_center.y }px,
-            ${ content_height/2 }px)`
+            ${ content_height/3 }px)`
     }
    
     
     document.onmousedown = content_event
-
     function content_event(down_event){
         var down_x = down_event.clientX
-        // console.log(down_x)
         document.onmousemove = function(move_event){
             var drop_x = move_event.clientX - down_x
-            // console.log(drop_x)
             down_x = move_event.clientX
             rect_anim_position.forEach(function(item){
                 item.x += drop_x
@@ -176,6 +173,34 @@ function init_el_wrap(content,img_arr){
             console.log('out')
         }
     }
+
+    document.ontouchstart = content_touch_event
+    function content_touch_event(down_event){
+        var down_x = down_event.clientX
+        document.ontouchmove = function(move_event){
+            var drop_x = move_event.clientX - down_x
+            down_x = move_event.clientX
+            rect_anim_position.forEach(function(item){
+                item.x += drop_x
+                if(item.x < sub_content_left){
+                    item.x = sub_content_right
+                }
+                item.element.style.transform = `translate3d(
+                    ${item.x}px,
+                    ${item.y}px,
+                    0px)`
+            })
+            
+        }
+        document.ontouchend = function(e){
+            document.onmousemove = null
+            console.log('up')
+        }
+        document.ontouchcancel = function(e){
+            document.onmousemove = null
+            console.log('out')
+        }
+    }
     /**
      * 
      * @param { center:object,rect_index:number } 
@@ -185,7 +210,32 @@ function init_el_wrap(content,img_arr){
         let involved_sub_list = []
         rect_anim_position.forEach(function(item,index){
             if(rect_index !== index){
-                item.element.onclick = null     // 在已经选中一个元素的时候清除其他子容器的事件监听
+                // item.element.onclick = null     // 在已经选中一个元素的时候清除其他子容器的事件监听
+                item.element.onclick = function(){
+                    rect_anim_position.forEach(function(item){
+                        item.element.onclick = sub_content_click    // 重新设置事件监听
+                    })
+                    involved_sub_list.forEach(function(item2){
+                        item2.element.style.transform = `translate3d(
+                            ${item2.x}px,
+                            ${item2.y}px,
+                            0px)`
+                    })
+                    rect_anim_position[rect_index].element.style.transform = `translate3d(
+                        ${rect_anim_position[rect_index].x}px,
+                        ${rect_anim_position[rect_index].y}px,
+                        0px)`
+                        rect_anim_position[rect_index].element.style.transition = "0.5s"
+                    setTimeout(function(){// 重新开始横向动作
+                        involved_sub_list.forEach(function(item){
+                            item.element.style.transition = "0s"
+                        })
+                        rect_anim_position[rect_index].element.style.transition = "0s"
+                        rect_animate()                                  
+                    },550)
+                    return
+
+                }
                 if( Math.pow(item.x - center.x , 2 ) + Math.pow( item.y - center.y , 2 ) < Math.pow(sub_content_radius,2)){
                     // 确定到当前的受到影响的子容器
                     involved_sub_list.push(item)
