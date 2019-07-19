@@ -8,10 +8,10 @@ function init_el_wrap(content,img_arr){
     let content_width = bound_obj.width             // 容器宽高
     let content_height = bound_obj.height
     
-    let k = 1/10
+    let k = 1/5
     let w = 3
-    let show_img_list = mixin_img_arr(img_arr)
-    let sub_content_count = 300                     // 子容器的数量
+    let sub_content_count = 150                     // 子容器的数量
+    let show_img_list = mixin_img_arr(img_arr,sub_content_count)
     let sub_content_space = content_width/5 * k                      // 子容器之间的间隔
     let sub_content_width = ( content_width - sub_content_space/k ) * k       // 子容器宽度
     let sub_content_height = ( content_height -sub_content_space/k ) * k     // 子容器高度
@@ -208,13 +208,13 @@ function init_el_wrap(content,img_arr){
         
     }
 
-    function mixin_img_arr(img_arr){    // 控制传入的图片数组
-        if(img_arr.length > 300){
-            return img_arr.slice(0,300)
+    function mixin_img_arr(img_arr,sub_content_count){    // 控制传入的图片数组
+        if(img_arr.length > sub_content_count){
+            return img_arr.slice(0,sub_content_count)
         }else{
             var arr = []
             var len = img_arr.length 
-            for(var i = 0;i < 300;i++){
+            for(var i = 0;i < sub_content_count;i++){
                 var index = Math.floor( Math.random() * ( len ) )
                 arr.push(img_arr[index])
             }
