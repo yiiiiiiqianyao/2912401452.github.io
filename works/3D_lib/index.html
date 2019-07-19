@@ -122,7 +122,7 @@
      		magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
      									"px) rotateX("+magic.rotateX+
      									"deg) rotateY("+magic.rotateY+"deg)";
-     	})//end of mousewheel
+		 })//end of mousewheel
      	
      	document.onmousedown=function(event){
      		if (!event) event = window.event;
@@ -144,6 +144,29 @@
      			document.onmousemove = null;
      		}	
 		}//end of document.onmousedown
+
+		
+
+		document.ontouchstart = function(event){
+			if (!event) event = window.event;
+     		var x = event.clientX,
+     			y = event.clientY,
+     			cutX = x,
+				cuty= y;
+			document.ontouchmove = function(event){
+				if (!event) event = window.event;
+     			cutX = event.clientX - x;
+     			cutY = event.clientY - y;
+     			magic.rotateX += -cutY*.02;
+     			magic.rotateY += cutX*.02;
+   				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+   											"px) rotateX("+magic.rotateX+
+   											"deg) rotateY("+magic.rotateY+"deg)";
+			}
+			document.ontouchend = function(){
+				document.ontouchmove = null
+			}
+		}
 		
      	var magic = new Magic();
      	magic.init();//创建li元素
