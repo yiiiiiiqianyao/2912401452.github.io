@@ -166,20 +166,20 @@ function init_el_wrap(content,img_arr){
         }
         document.onmouseup = function(e){
             document.onmousemove = null
-            console.log('up')
+            document.onmouseleave = null
         }
         document.onmouseleave = function(e){
             document.onmousemove = null
-            console.log('out')
+            document.onmouseup = null
         }
     }
 
     document.ontouchstart = content_touch_event
     function content_touch_event(down_event){
-        var down_x = down_event.clientX
+        var down_x = down_event.changedTouches[0].clientX
         document.ontouchmove = function(move_event){
-            var drop_x = move_event.clientX - down_x
-            down_x = move_event.clientX
+            var drop_x = move_event.changedTouches[0].clientX - down_x
+            down_x = move_event.changedTouches[0].clientX
             rect_anim_position.forEach(function(item){
                 item.x += drop_x
                 if(item.x < sub_content_left){
@@ -193,12 +193,10 @@ function init_el_wrap(content,img_arr){
             
         }
         document.ontouchend = function(e){
-            document.onmousemove = null
-            console.log('up')
+            document.ontouchmove = null
         }
         document.ontouchcancel = function(e){
-            document.onmousemove = null
-            console.log('out')
+            document.ontouchmove = null
         }
     }
     /**
