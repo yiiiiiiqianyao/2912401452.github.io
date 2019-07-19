@@ -261,7 +261,7 @@ function init_el_wrap(content,img_arr){
             let sinA = aY / aXY
             let cosA = aX / aXY
 
-            let random_len = content_width/3 + sub_content_width*Math.random()
+            let random_len = content_width/4 + sub_content_width*Math.random()
             let random_x = random_len*cosA
             let random_y = random_len*sinA
 
@@ -306,10 +306,10 @@ function init_el_wrap(content,img_arr){
 
     function circle_sub_animate(){
         var mx = 1
+        var d = 0.01 // Math.PI * 2
         involved_sub_list.forEach(function(item){
             var x1 = item.cx - content_center.x
             var y1 = item.cy - content_center.y
-            // var my = Math.sqrt(Math.pow(y1,2) + 2*x1*mx)
             if(x1 > 0 && y1 < 0){       // 右上
                 var my = y1 + Math.sqrt(Math.pow(y1,2) + 2*x1*mx - Math.pow(mx,2))
                 item.cx = item.cx - mx
@@ -327,6 +327,25 @@ function init_el_wrap(content,img_arr){
                 item.cx = item.cx + mx
                 item.cy = item.cy - my
             }
+            // var r = Math.sqrt( Math.pow( x1, 2 ),Math.pow( y1, 2 ) )
+            // if(x1 > 0 && y1 < 0){       // 右上
+            //    var q = Math.acos(x1/r)
+            //    console.log(q)
+            //    console.log(r)
+            //    console.log(x1)
+            //    console.log('------')
+            //    q += d
+            //    item.cx = content_center.x + r*Math.cos(q)
+            //    item.cy = content_center.y - r*Math.sin(q)
+            //    item.cx = item.cx - ( x1 - r*Math.cos(q) )
+            //    item.cy = item.cy - ( r*Math.sin(q) - y1 ) 
+            // }else if(x1 < 0 && y1 < 0){ // 左上
+               
+            // }else if(x1 < 0 && y1 > 0){ // 左下
+               
+            // }else{                      // 右下
+               
+            // }
             item.element.style.transform = `translate3d(
                 ${ item.cx }px,
                 ${ item.cy }px,
