@@ -7,10 +7,12 @@ body,html{
     height: 100%;
 }
 #all{
-    position: absolute;
+    /* position: absolute; */
+    position: relative;
     width: 400%;
     height: 100%;
-    left: 0;
+    /* left: 0;
+    top: 0; */
     transition: 1s;
 }
 #all.left{
