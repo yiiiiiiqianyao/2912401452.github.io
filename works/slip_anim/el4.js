@@ -7,8 +7,8 @@ function init_el_wrap(content,img_arr){
     let bound_obj = content.getBoundingClientRect() // 容器坐标对象
     let content_width = bound_obj.width             // 容器宽高
     let content_height = bound_obj.height
-    
-    let k = 1/5
+     
+    let k = 1/5 // 10
     let w = 3
     let sub_content_count = 150                     // 子容器的数量
     let show_img_list = mixin_img_arr(img_arr,sub_content_count)
