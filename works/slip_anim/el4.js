@@ -144,7 +144,38 @@ function init_el_wrap(content,img_arr){
             ${ content_center.y }px,
             ${ content_height/2 }px)`
     }
+   
+    
+    document.onmousedown = content_event
 
+    function content_event(down_event){
+        var down_x = down_event.clientX
+        // console.log(down_x)
+        document.onmousemove = function(move_event){
+            var drop_x = move_event.clientX - down_x
+            // console.log(drop_x)
+            down_x = move_event.clientX
+            rect_anim_position.forEach(function(item){
+                item.x += drop_x
+                if(item.x < sub_content_left){
+                    item.x = sub_content_right
+                }
+                item.element.style.transform = `translate3d(
+                    ${item.x}px,
+                    ${item.y}px,
+                    0px)`
+            })
+            
+        }
+        document.onmouseup = function(e){
+            document.onmousemove = null
+            console.log('up')
+        }
+        document.onmouseleave = function(e){
+            document.onmousemove = null
+            console.log('out')
+        }
+    }
     /**
      * 
      * @param { center:object,rect_index:number } 
