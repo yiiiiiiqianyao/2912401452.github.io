@@ -87,7 +87,8 @@ body,html{
     position: absolute;
     left: 20px;
     bottom: 20px;
-    width: 300px;
+    width: 100%;
+    /* width: 300px; */
     height: 32px;
 }
 #btn ul li{
@@ -103,113 +104,35 @@ body,html{
     border-radius: 3px;
     cursor: pointer;
 }
+#btn ul .close{
+    position: absolute;
+    right: 5%;
+}
 #btn ul li:hover{
     background: rgba(0,127,127,0.8);
 }
-#alert{
-    display: none;
+#alert_box{
+    /* display: none; */
+    overflow: hidden;
+    text-align: center;
     position: absolute;
-    top: 10%;
-    left: 10%;
-    width: 80%;
-    height: 80%;
+    /* top: 10%;
+    left: 10%; */
+    top:50%;
+    left: 50%;
+    /* width: 80%;
+    height: 80%; */
+    width: 0;
+    height: 0;
     background: rgba(0,127,127,0.5);
     border: 1px solid rgba(127,255,255,0.25);
     box-shadow: 0 0 12px rgba(0,255,255,0.5);
     border-radius: 3px;
-    transform : rotateY(0deg) scale(2);
     opacity: 1;
-    transform-style: preserve-3d;
+    transition: 0.5s;
 }
-#alert .title,#alert .img,#alert .author,#alert .info{
-    border: 1px solid rgba(127,255,255,0.25);
-    box-shadow: 0 0 12px rgba(0,255,255,0.5);
-    background: rgba(0,0,0,.5);
-    border-radius: 3px;
-}
-#alert .title{
-    position: absolute;
-    top: 15%;
-    left: 25%;
-    width: 50%;
-    height: 10%;
-}
-#alert .title span{
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    color: #fff;
-    font-weight: bold;
-    font-size: 18px;
-    text-align: center;
-    transform: translateY(-50%);
-}
-#alert .img{
-    overflow: hidden;
-    position: absolute;
-    top: 35%;
-    left: 5%;
-    width: 45%;
-    height: 50%;
-}
-#alert .img img{
-    width: 100%;
-}
-#alert .author{
-    position: absolute;
-    top: 35%;
-    right: 5%;
-    width: 35%;
-    height: 5%;
-}
-#alert .author span{
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    color: #fff;
-    font-weight: bold;
-    font-size: 14px;
-    text-align: center;
-    transform: translateY(-50%);
-}
-#alert .info{
-    position: absolute;
-    top: 45%;
-    right: 5%;
-    width: 35%;
-    height: 40%;
-}
-#alert .info span{
-    position: absolute;
-    top: 5%;
-    padding: 15px;
-    color: #fff;
-    font-weight: bold;
-    font-size: 14px;
-}
-#frame{
-    float: left;
-    width: 25%;
-    height: 100%;
-}
-#back{
-    position: absolute;
-    right: -70px;
-    bottom: 20px;
-    z-index: 99999999;
-    height: 30px;
-    line-height: 30px;
-    border: 1px solid rgba(127,255,255,1);
-    color: rgba(127,255,255,1);
-    padding: 0 10px;
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 3px;
-    cursor: pointer;
-}
-#back:hover{
-    background: rgba(0,127,127,0.8);
-}
+
+/* #alert_box{} */
 
 
 
