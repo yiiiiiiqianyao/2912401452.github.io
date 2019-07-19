@@ -1,0 +1,190 @@
+<!doctype html>
+<!DOCTYPE html>
+<html ondragstart="return false" onselectstart="return false">
+    <head>
+        <meta charset="UTF-8" />
+        <title>3D档案库</title>
+        <link rel="stylesheet" href="css/index.css" />
+    </head>
+    <body>
+
+        <div id="all">
+            <!--主屏显示-->
+            <div id="main">
+                <!--所有li模块-->
+                <div id="list">
+                    <ul></ul>
+                </div>
+
+                <!--左下角按钮-->
+                <div id="btn">
+                    <ul>
+						<li id="gridBtn">Grid</li>
+						<li id="helixBtn">Helix</li>
+						<li id="SphereBtn">Sphere</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="js/data.js"></script>
+    <script>
+		var img_list = [ "img/1.jpg" , "img/2.jpg" , "img/3.jpg" , "img/4.jpg" , "img/5.jpg" , "img/6.jpg"]
+    	/*------model object init------*/
+     	function Magic(){
+     		this.liNum = 125;
+			this.oUl = document.getElementById('list').children[0];
+			this.aLi = this.oUl.children;
+			this.disX = 350;
+			this.disY = 350;
+			this.disZ = 600;
+			this.oUlZ = -2000;
+			this.rotateX = 0;
+			this.rotateY = 0;
+     	}
+     	
+     	Magic.prototype.init = function(){//创建li元素
+     		var fragment = document.createDocumentFragment();//使用文档片段 轻量级
+     		for(var i=0;i<this.liNum;i++){
+     			var oLi = document.createElement('li');
+				var data = flyData[0];
+				var index = Math.floor(Math.random() * img_list.length)
+				var img_src = img_list[ index ]
+				// console.log(index)
+				oLi.style.backgroundImage = `url('${img_src}')`
+				oLi.style.backgroundSize = "100% 100%"
+     			// oLi.innerHTML = //"<b class='liCover'></b>"+
+				//      			"<p class='liTitle'>"+data.type+"</p>"+
+				//      			"<p class='liAuthor'>"+data.author+"</p>"+
+				//      			"<p class='liTime'>"+data.time+"</p>"
+				fragment.appendChild(oLi);
+     		}
+     		this.oUl.appendChild(fragment);//避免直接的DOM插入
+     		
+     	}
+     	
+     	Magic.prototype.grid = function(){
+     		
+     		for(var i = 0;i < this.liNum;i++){
+     			this.aLi[i].index = i;	// 保存排序
+       			this.aLi[i].x = i % 5;	// 确定元素的位置(排列位置)
+       			this.aLi[i].y = ~~(i % 25 / 5);
+       			this.aLi[i].z = 4 - ~~(i / 25);
+       			this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX,//设置元素的位置（空间位置）
+       			this.aLi[i].poy = (this.aLi[i].y - 2)*this.disY,
+       			this.aLi[i].poz = (this.aLi[i].z - 3)*this.disZ + 500;
+       			this.aLi[i].style.transform = "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+this.aLi[i].poz+"px)";
+     		}
+     	}
+     	
+     	Magic.prototype.helix = function(){
+     		for(var i = 0;i < this.liNum;i++){
+     			this.aLi[i].pox = 0;
+     			this.aLi[i].poy = ~~(i%25/5)*200-400;
+     			this.aLi[i].poz = 1250;
+     			this.aLi[i].rotateY = 2*i*(360/125);//360/25
+     			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg)"+
+     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1250px)";
+     		}
+     	}
+     	
+     	Magic.prototype.sphere = function(){
+     		for(var i = 0;i < this.liNum;i++){
+     			this.aLi[i].pox = 0;
+     			this.aLi[i].poy = ~~(i%25/5)*200-600;
+     			this.aLi[i].poz = 1000;
+     			this.aLi[i].rotateY = 3*i*(360/125);//360/25
+     			this.aLi[i].rotateX = ~~(i%25/5)*36-80;//绕X轴转的度数
+     			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
+     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
+     		}
+     	}
+     	
+     	document.addEventListener('mousewheel',function(event){
+			console.log(magic.oUlZ)
+			if(magic.oUlZ < -3000){
+				magic.oUlZ = -2999
+				return
+			}else if(magic.oUlZ > 800){
+				magic.oUlZ = 799
+				return
+			}
+     		if (!event) event = window.event;
+     		var delta = 0;
+		  
+		    if (event.wheelDelta) {//IE、chrome浏览器使用的是wheelDelta，并且值为“正负120”
+		        delta = event.wheelDelta/120; 
+		        if (window.opera) delta = -delta;//因为IE、chrome等向下滚动是负值，FF是正值，为了处理一致性，在此取反处理
+		    } else if (event.detail) {//FF浏览器使用的是detail,其值为“正负3”
+		        delta = -event.detail/3;
+		    }
+     		magic.oUlZ -= delta*400;
+     		magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+     									"px) rotateX("+magic.rotateX+
+     									"deg) rotateY("+magic.rotateY+"deg)";
+     	})//end of mousewheel
+     	
+     	document.onmousedown=function(event){
+     		if (!event) event = window.event;
+     		var x = event.clientX,
+     			y = event.clientY,
+     			cutX = x,
+     			cuty= y;
+     		document.onmousemove = function(event){
+     			if (!event) event = window.event;
+     			cutX = event.clientX - x;
+     			cutY = event.clientY - y;
+     			magic.rotateX += -cutY*.02;
+     			magic.rotateY += cutX*.02;
+   				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+   											"px) rotateX("+magic.rotateX+
+   											"deg) rotateY("+magic.rotateY+"deg)";
+     		}
+     		document.onmouseup = function(){
+     			document.onmousemove = null;
+     		}	
+		}//end of document.onmousedown
+		
+     	var magic = new Magic();
+     	magic.init();//创建li元素
+     	magic.grid();//默认为grid模式
+     	var gridBtn = document.getElementById('gridBtn'),
+     		helixBtn = document.getElementById('helixBtn'),
+     		SphereBtn = document.getElementById('SphereBtn');
+     	
+     	gridBtn.onclick = function(){magic.grid();}
+     	helixBtn.onclick = function(){magic.helix();}
+     	SphereBtn.onclick = function(){magic.sphere();}
+     	
+     	magic.oUl.onclick = function(e){
+     		console.log(e.target.index)
+		 }
+		 
+		 // animate
+		 rotate_scene()
+		function rotate_scene(){
+			magic.oUlZ += 0.1
+			magic.rotateX += 0.1
+			magic.rotateY += 0.1
+			magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+   											"px) rotateX("+magic.rotateX+
+   											"deg) rotateY("+magic.rotateY+"deg)";
+			requestAnimationFrame(rotate_scene)
+		} 
+     	
+    </script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
