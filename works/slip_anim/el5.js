@@ -3,7 +3,7 @@
  * @param {*} content 容器
  * @param {*} img_arr 需要显示的图片数组
  */
-function init_el_wrap(content,img_arr){
+function init_el_wrap(content,img_arr,aspect){
     let bound_obj = content.getBoundingClientRect() // 容器坐标对象
     let content_width = bound_obj.width             // 容器宽高
     let content_height = bound_obj.height
@@ -19,7 +19,7 @@ function init_el_wrap(content,img_arr){
     let show_img_list = mixin_img_arr(img_arr,sub_content_count)
     let sub_content_space = content_width/5 * k                      // 子容器之间的间隔
     let sub_content_width = ( content_width - sub_content_space/k ) * k       // 子容器宽度
-    let sub_content_height = ( content_height -sub_content_space/k ) * k     // 子容器高度
+    let sub_content_height = sub_content_width * aspect//( content_height -sub_content_space/k ) * k     // 子容器高度
                                                     // 子容器的对角线半径
     let sub_content_radius = 3*Math.sqrt(Math.pow(sub_content_height/2,2) + Math.pow(sub_content_width/2,2))
     let content_center = {                          // 容器中心位置 ( 相对于三维偏移 )
@@ -136,6 +136,7 @@ function init_el_wrap(content,img_arr){
         let ele = document.createElement('div')
         ele.style.backgroundClip = "content-box"
         ele.style.backgroundImage = `url(${ img_url })`
+        // ele.style.backgroundSize = "100% 100%"
         ele.style.backgroundSize = "100% 100%"
         ele.classList.add("sub_content")
         ele.style.display = "inline-block"
