@@ -31,8 +31,21 @@
         'images/5.png',
         'images/6.png'
     ]
-    init_el_wrap(document.body,watches,1)
+    init_el_wrap(document.body,watches,2/3)
     // init_el_wrap(document.getElementById("content"),watches)
-    
+    window.onload = function(){
+        setTimeout(fullScreen,50)
+    }
+    window.onclick = fullScreen
+    fullScreen()
+    //全屏
+    function fullScreen(){
+        var el = document.documentElement;
+        var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
+            if(typeof rfs != "undefined" && rfs) {
+                rfs.call(el);
+            };
+            return;
+    }
 </script>
 </html>

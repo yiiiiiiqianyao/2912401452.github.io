@@ -22,6 +22,8 @@
 						<li id="gridBtn">Grid</li>
 						<li id="helixBtn">Helix</li>
 						<li id="SphereBtn">Sphere</li>
+						<li id="" onclick="fullScreen()">fullScreen</li>
+						<li id="" onclick="exitScreen()">exitScreen</li>
                     </ul>
                 </div>
             </div>
@@ -106,7 +108,7 @@
      	}
      	
      	document.addEventListener('mousewheel',function(event){
-			console.log(magic.oUlZ)
+			// console.log(magic.oUlZ)
 			if(magic.oUlZ < -3000){
 				magic.oUlZ = -2999
 				return
@@ -208,20 +210,47 @@
 			alert_box.style.top = "50%"
 			alert_box.style.left = "50%"
 		}
-		 
 		// animate
 		rotate_scene()
 		function rotate_scene(){
-			magic.oUlZ += 0.05
-			magic.rotateX += 0.05
+			// magic.oUlZ += 0.05
+			// magic.rotateX += 0.05
 			magic.rotateY += 0.05
 			magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
    											"px) rotateX("+magic.rotateX+
    											"deg) rotateY("+magic.rotateY+"deg)";
 			ainimate_timer = requestAnimationFrame(rotate_scene)
 		} 
-     	
-    </script>
+		 
+		//全屏
+		function fullScreen(){
+            var el = document.documentElement;
+            var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
+                if(typeof rfs != "undefined" && rfs) {
+                    rfs.call(el);
+                };
+              return;
+        }
+        //退出全屏
+        function exitScreen(){
+            if (document.exitFullscreen) {  
+                document.exitFullscreen();  
+            }  
+            else if (document.mozCancelFullScreen) {  
+                document.mozCancelFullScreen();  
+            }  
+            else if (document.webkitCancelFullScreen) {  
+                document.webkitCancelFullScreen();  
+            }  
+            else if (document.msExitFullscreen) {  
+                document.msExitFullscreen();  
+            } 
+            if(typeof cfs != "undefined" && cfs) {
+                cfs.call(el);
+            }
+        }
+	
+	</script>
 </html>
 
 
