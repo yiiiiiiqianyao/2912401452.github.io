@@ -11,11 +11,11 @@ function init_el_wrap(content,img_arr,aspect){
     let content_left = bound_obj.left
 
     // let k = 1/5 // 10
-    // let k = 1/10
-    let k = 1/7
+    let k = 1/10
+    // let k = 1/7
     let w = 3
-    // let sub_content_count = 300                     // 子容器的数量
-    let sub_content_count = 147
+    let sub_content_count = 300                     // 子容器的数量
+    // let sub_content_count = 147
     let show_img_list = mixin_img_arr(img_arr,sub_content_count)
     let sub_content_space = content_width/5 * k                      // 子容器之间的间隔
     let sub_content_width = ( content_width - sub_content_space/k ) * k       // 子容器宽度
