@@ -24,6 +24,7 @@
 						<li id="SphereBtn">Sphere</li>
 						<li id="" onclick="fullScreen()">fullScreen</li>
 						<li id="" onclick="exitScreen()">exitScreen</li>
+						<li onclick="triggar()">trigger</li>
                     </ul>
                 </div>
             </div>
@@ -36,8 +37,21 @@
     </body>
     <script src="js/data.js"></script>
     <script>
-		var img_list = [ "img/1.jpg" , "img/2.jpg" , "img/3.jpg" , "img/4.jpg" , "img/5.jpg" , "img/6.jpg"]
-    	/*------model object init------*/
+		var img_list = [ "img/1.jpg" , "img/2.png" , "img/3.jpg" , "img/4.jpg" , "img/5.png" , "img/6.png"]
+		var is_rotate = true
+		/*------model object init------*/
+		var oImg = new Image()
+		oImg.src = "img/1.jpg"
+		oImg.onload = function(){
+			var oUL = document.getElementById('list').children[0]
+			while(oImg.width > 250){
+				oImg.width = oImg.width / 1.5
+				oImg.height = oImg.height / 1.5
+			}
+			oUL.style.width = oImg.width + "px"
+			oUL.style.height = oImg.height + "px"
+		}
+
      	function Magic(){
      		this.liNum = 125;
 			this.oUl = document.getElementById('list').children[0];
@@ -57,7 +71,6 @@
 				var data = flyData[0];
 				var index = Math.floor(Math.random() * img_list.length)
 				var img_src = img_list[ index ]
-				// console.log(index)
 				oLi.style.backgroundImage = `url('${img_src}')`
 				oLi.style.backgroundSize = "100% 100%"
      			// oLi.innerHTML = //"<b class='liCover'></b>"+
@@ -249,7 +262,15 @@
                 cfs.call(el);
             }
         }
-	
+		
+		function triggar(){
+			if(is_rotate){
+				cancelAnimationFrame(ainimate_timer)
+				is_rotate = !is_rotate
+			}else{
+				rotate_scene()
+			}
+		}
 	</script>
 </html>
 
