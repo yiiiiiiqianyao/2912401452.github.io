@@ -86,10 +86,7 @@ function init_el_wrap(content,img_arr){
                 status:"move",  // 表示子容器的状态 ( move : 正常移动 drag : 拖动  )
                 x:sub_x,
                 y:sub_y,
-                z:0,
-                dx:sub_x,
-                dy:sub_y,
-                dz:0
+                z:0
             })
             content_wrap.appendChild(sub_item)
         }
@@ -146,6 +143,9 @@ function init_el_wrap(content,img_arr){
         ele.style.zIndex = "0"
         // ele.onclick = sub_content_click             // 给每个子容器绑定事件监听
         ele.onmousedown = sub_content_click
+
+        ele.ontouchstart = sub_content_touch
+
         // ele.onmouseenter = function(){
         //     ele.style.transform = "scale(1.2)"
         //     ele.onmouseout = function(){
@@ -310,6 +310,158 @@ function init_el_wrap(content,img_arr){
         }
 
     }
+
+    function sub_content_touch(down_e){
+        var isDrag = false                                      // 默认用户的操作是点击 ( 选择 )
+        // console.log(down_e.changedTouches[0])
+        var current_sub_content = down_e.changedTouches[0].target                 // 当前的子容器目标
+        var current_sub_content_bound = current_sub_content.getBoundingClientRect()
+        var current_sub_top = current_sub_content_bound.top
+        var current_sub_left = current_sub_content_bound.left
+        var offset_x = down_e.changedTouches[0].clientX - current_sub_left    // 子容器放大三倍
+        var offset_y = down_e.changedTouches[0].clientY - current_sub_top
+        current_sub_content.style.transform = "scale(3)"        // 当前的子容器目标放大
+       
+        current_sub_content.ontouchmove = function(move_e){
+            if(Math.abs(move_e.changedTouches[0].clientX - down_e.changedTouches[0].clientX) < 0.01){ return }   // 过滤鼠标轻微抖动导致的移动事件
+            isDrag = true                           // 用户当前的操作是拖动
+            console.log('move')
+            if(!selected_sub_content.isEmpty){      // 之前有选中的子容器
+                if(selected_sub_content.sub_index == current_sub_content._my_index){ // 拖动之前选中子容器
+                    selected_sub_content.x = move_e.changedTouches[0].clientX - content_wrap_left - offset_x/3
+                    selected_sub_content.y = move_e.changedTouches[0].clientY - content_top - offset_y/3
+                    current_sub_content.style.left = selected_sub_content.x + "px"
+                    current_sub_content.style.top = selected_sub_content.y + "px"
+
+                }else{  // 拖动不同子容器
+                    console.log('diff')
+                    var last_selected_sub = rect_anim_position[selected_sub_content.sub_index]
+                    last_selected_sub.element.style.zIndex = "0"
+                    last_selected_sub.element.style.top = last_selected_sub.y + "px"
+                    last_selected_sub.element.style.left = last_selected_sub.x + "px"
+                    last_selected_sub.element.style.transform = "scale(1)"
+                    last_selected_sub.element.style.transition = "0.5s"
+                    setTimeout(function(){
+                        last_selected_sub.element.style.transition = "0s"
+                        last_selected_sub.element.style.transform = "scale(1)"
+                        last_selected_sub.element.style.top = last_selected_sub.y + "px"
+                        last_selected_sub.element.style.left = last_selected_sub.x + "px"
+                    },520)
+
+                    selected_sub_content.sub_index = current_sub_content._my_index
+                    selected_sub_content.element = current_sub_content
+                    selected_sub_content.x = move_e.changedTouches[0].clientX - content_wrap_left
+                    selected_sub_content.y = move_e.changedTouches[0].clientY - content_top
+
+                    current_sub_content.style.zIndex = "1"
+                    current_sub_content.style.transform = "scale(3)"
+                    current_sub_content.style.left = selected_sub_content.x + "px"
+                    current_sub_content.style.top = selected_sub_content.y + "px"
+                }
+
+            }else{  // 之前没有选中的子容器
+                
+                selected_sub_content.element = current_sub_content
+                selected_sub_content.sub_index = current_sub_content._my_index
+                // selected_sub_content.x = move_e.clientX - offset_x
+                // selected_sub_content.y = move_e.clientY - offset_y
+                selected_sub_content.x = move_e.changedTouches[0].clientX - content_wrap_left - offset_x
+                selected_sub_content.y = move_e.changedTouches[0].clientY - content_top - offset_y
+
+
+                current_sub_content.style.zIndex = "1"
+                current_sub_content.style.left = selected_sub_content.x + "px"
+                current_sub_content.style.top = selected_sub_content.y + "px"
+            }
+          
+        }
+
+        current_sub_content.ontouchend = function(up_e){
+            current_sub_content.onmousemove = null
+            if(isDrag){ // 用户的操作是拖动
+                selected_sub_content.isEmpty = false
+                selected_sub_content.element = current_sub_content
+                selected_sub_content.element.style.transition = "0s"
+                
+                selected_sub_content.sub_index = current_sub_content._my_index
+              
+
+            }else{      // 用户额操作是点击 ( 选择 )
+                if(selected_sub_content.isEmpty){       // 当前处于选中状态的子容器的信息对象为空
+
+                    selected_sub_content.isEmpty = false
+                    selected_sub_content.element = current_sub_content
+                    selected_sub_content.sub_index = current_sub_content._my_index
+                    selected_sub_content.x = content_center.x
+                    selected_sub_content.y = content_center.y
+
+                    current_sub_content.style.top = content_center.y + "px"
+                    current_sub_content.style.left = content_center.x + "px "
+                    current_sub_content.style.zIndex = "1"
+                    current_sub_content.style.transition = "0.5s"
+                    setTimeout(function(){
+                        current_sub_content.style.transition = "0s"
+                    },520)
+
+                }else{                                  // 当前处于选中状态的子容器的信息对象不为空
+
+                    if(selected_sub_content.sub_index == current_sub_content._my_index){    // 用户重复点击上一次点击的子容器
+                        selected_sub_content.isEmpty = true // 设置当前处于选中状态的子容器的信息对象为空
+                        selected_sub_content.sub_index = -1
+                        selected_sub_content.x = ""
+                        selected_sub_content.y = ""
+
+                        current_sub_content.style.transform = "scale(1)"
+                        current_sub_content.style.transition = "0.5s"
+                        current_sub_content.style.left = rect_anim_position[current_sub_content._my_index].x + "px"
+                        current_sub_content.style.top = rect_anim_position[current_sub_content._my_index].y + "px"
+                        setTimeout(function(){  
+                            current_sub_content.style.transition = "0s"
+                            current_sub_content.style.zIndex = "0"
+                            current_sub_content.style.transform = "scale(1)"
+                            current_sub_content.style.left = rect_anim_position[current_sub_content._my_index].x + "px"
+                            current_sub_content.style.top = rect_anim_position[current_sub_content._my_index].y + "px"
+                        },520)
+
+                    }else{ // 用户点击是新的子容器
+                        // 恢复之前选中子容器
+                        var last_selected_sub = rect_anim_position[selected_sub_content.sub_index]
+                        last_selected_sub.element.style.top = last_selected_sub.y + "px"
+                        last_selected_sub.element.style.left = last_selected_sub.x + "px"
+                        last_selected_sub.element.style.transform = "scale(1)"
+                        last_selected_sub.element.style.transition = "0.5s"
+                        // 改变当前处于选中状态的子容器的信息对象
+                        selected_sub_content.sub_index = current_sub_content._my_index
+                        selected_sub_content.element = current_sub_content
+
+                        setTimeout(function(){  
+                            last_selected_sub.element.style.transition = "0s"
+                            last_selected_sub.element.style.zIndex = "0"
+                            last_selected_sub.element.style.top = last_selected_sub.y + "px"
+                            last_selected_sub.element.style.left = last_selected_sub.x + "px"
+                            last_selected_sub.element.style.transform = "scale(1)"
+                        },520)
+
+                        // 改变新选中的子容器
+
+                        current_sub_content.style.transition = "0.5s"
+                        current_sub_content.style.transform = "scale(3)"
+                        current_sub_content.style.zIndex = "1"
+                        current_sub_content.style.top = selected_sub_content.y + "px"
+                        current_sub_content.style.left = selected_sub_content.x + "px"
+
+                        setTimeout(function(){
+                            current_sub_content.style.transition = "0s"
+                        },520)
+                    }
+
+                }
+            }
+        }
+        current_sub_content.ontouchend = function(){
+            current_sub_content.ontouchmove = null
+        }
+    }
    
     // 控制滑动商品列表
     document.onmousedown = content_event
@@ -341,6 +493,7 @@ function init_el_wrap(content,img_arr){
     // 控制滑动商品列表 ( 移动端适配 )
     document.ontouchstart = content_touch_event
     function content_touch_event(down_event){
+        if(!selected_sub_content.isEmpty){return}
         var down_x = down_event.changedTouches[0].clientX
         document.ontouchmove = function(move_event){
             var drop_x = move_event.changedTouches[0].clientX - down_x
