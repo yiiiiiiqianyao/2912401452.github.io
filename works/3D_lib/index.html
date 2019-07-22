@@ -277,6 +277,7 @@
    											"px) rotateX("+magic.rotateX+
    											"deg) rotateY("+magic.rotateY+"deg)";
 			ainimate_timer = requestAnimationFrame(rotate_scene)
+			//return timer
 		} 
 		 
 		//全屏
@@ -313,6 +314,7 @@
 				is_rotate = !is_rotate
 			}else{
 				rotate_scene()
+				is_rotate = !is_rotate
 			}
 		}
 	</script>
