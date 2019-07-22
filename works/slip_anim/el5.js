@@ -231,11 +231,13 @@ function init_el_wrap(content,img_arr,aspect){
             current_sub_content.onmousemove = null
             if(isDrag){ // 用户的操作是拖动
                 selected_sub_content.isEmpty = false
+                hide_info(selected_sub_content.element)
                 selected_sub_content.element = current_sub_content
                 selected_sub_content.element.style.transition = "0s"
                 
                 selected_sub_content.sub_index = current_sub_content._my_index
-              
+                
+                show_info(current_sub_content,"User Show Message")
 
             }else{      // 用户额操作是点击 ( 选择 )
                 if(selected_sub_content.isEmpty){       // 当前处于选中状态的子容器的信息对象为空
@@ -252,6 +254,7 @@ function init_el_wrap(content,img_arr,aspect){
                     current_sub_content.style.transition = "0.5s"
                     setTimeout(function(){
                         current_sub_content.style.transition = "0s"
+                        show_info(current_sub_content,"User Show Message")
                     },520)
 
                 }else{                                  // 当前处于选中状态的子容器的信息对象不为空
@@ -261,6 +264,7 @@ function init_el_wrap(content,img_arr,aspect){
                         selected_sub_content.sub_index = -1
                         selected_sub_content.x = ""
                         selected_sub_content.y = ""
+                        hide_info(selected_sub_content.element)
 
                         current_sub_content.style.transform = "scale(1)"
                         current_sub_content.style.transition = "0.5s"
@@ -272,6 +276,7 @@ function init_el_wrap(content,img_arr,aspect){
                             current_sub_content.style.transform = "scale(1)"
                             current_sub_content.style.left = rect_anim_position[current_sub_content._my_index].x + "px"
                             current_sub_content.style.top = rect_anim_position[current_sub_content._my_index].y + "px"
+                            
                         },520)
 
                     }else{ // 用户点击是新的子容器
@@ -281,6 +286,7 @@ function init_el_wrap(content,img_arr,aspect){
                         last_selected_sub.element.style.left = last_selected_sub.x + "px"
                         last_selected_sub.element.style.transform = "scale(1)"
                         last_selected_sub.element.style.transition = "0.5s"
+                        hide_info(selected_sub_content.element)
                         // 改变当前处于选中状态的子容器的信息对象
                         selected_sub_content.sub_index = current_sub_content._my_index
                         selected_sub_content.element = current_sub_content
@@ -303,6 +309,7 @@ function init_el_wrap(content,img_arr,aspect){
 
                         setTimeout(function(){
                             current_sub_content.style.transition = "0s"
+                            show_info(current_sub_content,"User Show Message")
                         },520)
                     }
 
@@ -311,6 +318,7 @@ function init_el_wrap(content,img_arr,aspect){
         }
         current_sub_content.onmouseleave = function(){
             current_sub_content.onmousemove = null
+            hide_info(current_sub_content)
         }
 
     }
@@ -574,5 +582,13 @@ function init_el_wrap(content,img_arr,aspect){
             }
             return arr
         }
+    }
+
+    function show_info(wrap, info){
+        wrap.innerHTML = info
+    }
+
+    function hide_info(wrap){
+        wrap.innerHTML = ""
     }
 }
