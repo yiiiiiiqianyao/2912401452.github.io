@@ -11,9 +11,11 @@ function init_el_wrap(content,img_arr){
     let content_left = bound_obj.left
 
     // let k = 1/5 // 10
-    let k = 1/10
+    // let k = 1/10
+    let k = 1/7
     let w = 3
-    let sub_content_count = 300                     // 子容器的数量
+    // let sub_content_count = 300                     // 子容器的数量
+    let sub_content_count = 147
     let show_img_list = mixin_img_arr(img_arr,sub_content_count)
     let sub_content_space = content_width/5 * k                      // 子容器之间的间隔
     let sub_content_width = ( content_width - sub_content_space/k ) * k       // 子容器宽度
@@ -111,6 +113,7 @@ function init_el_wrap(content,img_arr){
                 }
                 item.element.style.left = item.x + "px"
                 item.element.style.top = item.y + "px"
+                // item.element.style.transform = "scale(1)"
             }
             if(!selected_sub_content.isEmpty){
                 var center = {
@@ -325,7 +328,7 @@ function init_el_wrap(content,img_arr){
         current_sub_content.ontouchmove = function(move_e){
             if(Math.abs(move_e.changedTouches[0].clientX - down_e.changedTouches[0].clientX) < 0.01){ return }   // 过滤鼠标轻微抖动导致的移动事件
             isDrag = true                           // 用户当前的操作是拖动
-            console.log('move')
+            // console.log('move')
             if(!selected_sub_content.isEmpty){      // 之前有选中的子容器
                 if(selected_sub_content.sub_index == current_sub_content._my_index){ // 拖动之前选中子容器
                     selected_sub_content.x = move_e.changedTouches[0].clientX - content_wrap_left - offset_x/3
@@ -553,7 +556,7 @@ function init_el_wrap(content,img_arr){
             }else{                  // 受影响的子容器在下方
                 item.element.style.top = item.y + sub_content_radius*sinA + "px"
             }
-
+            // item.element.style.transform = "scale(0.8)"
             
         })
     }
