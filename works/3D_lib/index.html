@@ -99,10 +99,26 @@
      	
      	Magic.prototype.helix = function(){
      		for(var i = 0;i < this.liNum;i++){
-     			this.aLi[i].pox = 0;
-     			this.aLi[i].poy = ~~(i%25/5)*200-400;
-     			this.aLi[i].poz = 1250;
-     			this.aLi[i].rotateY = 2*i*(360/125);//360/25
+				this.aLi[i].pox = 0
+				if(i < 25){
+					this.aLi[i].poy = 400
+				}else if(i < 50){
+					this.aLi[i].poy = 200
+				}else if(i < 75){
+					this.aLi[i].poy = 0
+				}else if(i < 100){
+					this.aLi[i].poy = -200
+				}else{
+					this.aLi[i].poy = -400
+				}
+				this.aLi[i].rotateY = i*(360/25)
+				this.aLi[i].poz = 1250
+
+				// this.aLi[i].pox = 0;
+     			// this.aLi[i].poy = ~~(i%25/5)*200-200;
+     			// this.aLi[i].poz = 1250;
+				// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
+
      			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg)"+
      			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1250px)";
      		}
@@ -110,13 +126,41 @@
      	
      	Magic.prototype.sphere = function(){
      		for(var i = 0;i < this.liNum;i++){
-     			this.aLi[i].pox = 0;
-     			this.aLi[i].poy = ~~(i%25/5)*200-600;
-     			this.aLi[i].poz = 1000;
-     			this.aLi[i].rotateY = 3*i*(360/125);//360/25
-     			this.aLi[i].rotateX = ~~(i%25/5)*36-80;//绕X轴转的度数
-     			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
-     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
+				this.aLi[i].pox = 0
+				// this.aLi[i].poz = 3000
+				this.aLi[i].rotateY = 0
+				this.aLi[i].rotateX = 0
+				if(i < 17){
+					this.aLi[i].poy = 200//~~(i%25/5)*200///-600
+					this.aLi[i].rotateX = 65
+					this.aLi[i].rotateY = i*(360/17)
+				}else if(i < 45){
+					this.aLi[i].poy = 100
+					this.aLi[i].rotateX = 35
+					this.aLi[i].rotateY = i*(360/28)
+				}else if(i < 80){
+					this.aLi[i].poy = 0
+					this.aLi[i].rotateX = 0
+					this.aLi[i].rotateY = i*(360/35)
+				}else if(i < 108){
+					this.aLi[i].poy = -100
+					this.aLi[i].rotateX = -35
+					this.aLi[i].rotateY = i*(360/28)
+				}else{
+					this.aLi[i].poy = -200
+					this.aLi[i].rotateX = -65
+					this.aLi[i].rotateY = i*(360/17)
+				}
+				this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
+				 "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
+				 
+				// this.aLi[i].pox = 0;
+     			// this.aLi[i].poy = ~~(i%25/5)*200-600;
+     			// this.aLi[i].poz = 1000;
+     			// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
+				// this.aLi[i].rotateX = ~~(i%25/5)*36-80;//绕X轴转的度数
+     			// this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
+     			// "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
      		}
      	}
      	
@@ -207,7 +251,7 @@
 			// alert_box.innerHTML = ""
 			alert_box.innerHTML = `
 				<img src="${ e.target.style.backgroundImage.split('"')[1] }"/>
-				<p>${ flyData[e.target.index].type }</P>
+				
 				<p>${ flyData[e.target.index].author }</P>
 				<p>${ flyData[e.target.index].time }</P>
 				<div id="btn">
