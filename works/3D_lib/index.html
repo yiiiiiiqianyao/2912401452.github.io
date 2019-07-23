@@ -198,7 +198,13 @@
      			if (!event) event = window.event;
      			cutX = event.clientX - x;
      			cutY = event.clientY - y;
-     			magic.rotateX += -cutY*.02;
+				magic.rotateX += -cutY*.02;
+				if(magic.rotateX > 90){
+					magic.rotateX -= -cutY*.02
+				}else if(magic.rotateX < -90){
+					magic.rotateX -= -cutY*.02
+				}
+				console.log(magic.rotateX)
      			magic.rotateY += cutX*.02;
    				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
    											"px) rotateX("+magic.rotateX+
