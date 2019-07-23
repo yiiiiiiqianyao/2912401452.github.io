@@ -225,7 +225,12 @@
 				if (!event) event = window.event;
      			cutX = event.changedTouches[0].clientX - x;
      			cutY = event.changedTouches[0].clientY - y;
-     			magic.rotateX += -cutY*.02;
+				magic.rotateX += -cutY*.02;
+				if(magic.rotateX > 60){
+					magic.rotateX -= -cutY*.02
+				}else if(magic.rotateX < -60){
+					magic.rotateX -= -cutY*.02
+				}
      			magic.rotateY += cutX*.02;
    				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
    											"px) rotateX("+magic.rotateX+
