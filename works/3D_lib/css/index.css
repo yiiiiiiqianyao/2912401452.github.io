@@ -44,6 +44,8 @@ body,html{
 }
 #list ul li{
     position: absolute;
+    /* backface-visibility: hidden;
+    backface-visibility:visible; */
     top: 0;
     left: 0;
     width: 100%;
@@ -55,6 +57,7 @@ body,html{
     color: #fff;
     cursor: default;
     transition: 2s cubic-bezier(.94,.02,.49,.98);
+    -webkit-backface-visibility: visible;
 }
 #list ul li .liCover{
     position: absolute;

@@ -239,9 +239,9 @@
      		helixBtn = document.getElementById('helixBtn'),
      		SphereBtn = document.getElementById('SphereBtn');
      	
-     	gridBtn.onclick = function(){magic.grid();}
-     	helixBtn.onclick = function(){magic.helix();}
-     	SphereBtn.onclick = function(){magic.sphere();}
+     	gridBtn.onclick = function(){magic.grid();set_backface_visiable()}
+     	helixBtn.onclick = function(){magic.helix();set_backface_unvisiablb()}
+     	SphereBtn.onclick = function(){magic.sphere();set_backface_visiable()}
      	
      	magic.oUl.onclick = function(e){
 			alert_box.style.width = "80%"
@@ -316,6 +316,20 @@
 				rotate_scene()
 				is_rotate = !is_rotate
 			}
+		}
+	
+		function set_backface_visiable(){
+			var list = document.querySelectorAll("#list li")
+			list.forEach(function(element){
+				element.style.backfaceVisibility = "visible"
+			})
+		}
+
+		function set_backface_unvisiablb(){
+			var list = document.querySelectorAll("#list li")
+			list.forEach(function(element){
+				element.style.backfaceVisibility = "hidden"
+			})
 		}
 	</script>
 </html>

@@ -21,10 +21,10 @@ function init_el_wrap(content,img_arr,aspect){
     let sub_content_width = ( content_width - sub_content_space/k ) * k       // 子容器宽度
     let sub_content_height = sub_content_width * aspect//( content_height -sub_content_space/k ) * k     // 子容器高度
                                                     // 子容器的对角线半径
-    let sub_content_radius = 3*Math.sqrt(Math.pow(sub_content_height/2,2) + Math.pow(sub_content_width/2,2))
+    let sub_content_radius = 4*Math.sqrt(Math.pow(sub_content_height/2,2) + Math.pow(sub_content_width/2,2))
     let content_center = {                          // 容器中心位置 ( 相对于三维偏移 )
         x : 3 * (content_width / 2 ) - sub_content_width / 2,
-        y : content_height / 2 - sub_content_height / 2
+        y : content_height / 2 + sub_content_height / 2
     }
     let sub_content_left =  0     // 子容器横向排放的其实坐标做边界
     let sub_content_right = 3 * content_width
