@@ -254,23 +254,27 @@
      	helixBtn.onclick = function(){magic.helix();set_backface_unvisiablb()}
      	SphereBtn.onclick = function(){magic.sphere();set_backface_visiable()}
      	
-     	magic.oUl.onclick = function(e){
-			alert_box.style.width = "80%"
-			alert_box.style.height = "80%"
-			alert_box.style.top = "10%"
-			alert_box.style.left = "10%"
-			// alert_box.innerHTML = ""
-			alert_box.innerHTML = `
-				<img src="${ e.target.style.backgroundImage.split('"')[1] }"/>
-				
-				<p>${ flyData[e.target.index].author }</P>
-				<p>${ flyData[e.target.index].time }</P>
-				<div id="btn">
-					<ul>
-						<li class="close" onclick="close_alert()">close</li>
-					</ul>
-				</div>
-			`
+     	magic.oUl.onmouseup = function(e){
+			
+			// console.log(e.target.style)
+			if(e){
+				alert_box.style.width = "80%"
+				alert_box.style.height = "80%"
+				alert_box.style.top = "10%"
+				alert_box.style.left = "10%"
+				// alert_box.innerHTML = ""
+				alert_box.innerHTML = `
+					<img src="${ e.target.style.backgroundImage.split('"')[1] }"/>
+					
+					<p>${ flyData[e.target.index].author }</P>
+					<p>${ flyData[e.target.index].time }</P>
+					<div id="btn">
+						<ul>
+							<li class="close" onclick="close_alert()">close</li>
+						</ul>
+					</div>
+				`
+			}
 		}
 		function close_alert(){
 			alert_box.style.width = "0"

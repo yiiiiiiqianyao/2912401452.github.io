@@ -591,4 +591,19 @@ function init_el_wrap(content,img_arr,aspect){
     function hide_info(wrap){
         wrap.innerHTML = ""
     }
+
+    return function(new_imgs){
+        var imgs = mixin_img_arr(new_imgs,sub_content_count)
+        // rect_anim_position
+        // imgs.forEach(function(val){
+
+        // })
+        // console.log(new_imgs)
+        // console.log(rect_anim_position[0].element.style.backgroundImage)
+        // console.log(imgs[0])
+        for(var i = 0;i < sub_content_count;i++){
+            // ele.style.backgroundImage = `url(${ img_url })`
+            rect_anim_position[i].element.style.backgroundImage= `url(${ imgs[i] })`
+        }
+    }
 }

@@ -17,9 +17,35 @@
             width:30%;
             height: 600px; 
         }
+        .change{
+            position: absolute;
+            top: 10px;
+            width: 60px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid rgb(11, 83, 238);
+            color: rgb(11, 83, 238);
+            background-color: rgba(86, 168, 235, 0.692);
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 2;
+            cursor: pointer;
+        }
+        .change:first{
+            left: 20px;
+        }
+        .change:nth-child(2){
+            left: 100px;
+        }
+        .change:hover{
+            transform: translateY(-1px);
+            box-shadow: 0 0 10px rgba(124, 228, 228, 0.692);
+        }
     </style>
 </head>
 <body>
+    <div class="change" onclick="up(1)">update</div>
+    <div class="change" onclick="up(2)">back</div>
     <div id="content"></div>
 </body>
 <script>
@@ -31,21 +57,31 @@
         'images/5.png',
         'images/6.png'
     ]
-    init_el_wrap(document.body,watches,2/3)
+    var update = null
+    update = init_el_wrap(document.body,watches,2/3)
+    
+    function up(number){
+        if(number == 1){
+            update(['images/1.jpg'])
+        }else{
+            update(watches)
+        }
+        
+    }
     // init_el_wrap(document.getElementById("content"),watches)
-    window.onload = function(){
-        setTimeout(fullScreen,50)
-    }
-    window.onclick = fullScreen
-    fullScreen()
-    //全屏
-    function fullScreen(){
-        var el = document.documentElement;
-        var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
-            if(typeof rfs != "undefined" && rfs) {
-                rfs.call(el);
-            };
-            return;
-    }
+    // window.onload = function(){
+    //     setTimeout(fullScreen,50)
+    // }
+    // window.onclick = fullScreen
+    // fullScreen()
+    // //全屏
+    // function fullScreen(){
+    //     var el = document.documentElement;
+    //     var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
+    //         if(typeof rfs != "undefined" && rfs) {
+    //             rfs.call(el);
+    //         };
+    //         return;
+    // }
 </script>
 </html>
