@@ -559,11 +559,19 @@ function init_el_wrap(content,img_arr,aspect){
 
             let sinA = aY / aXY
           
-
+            var sub_x = (sub_content_radius - Math.abs(item.x - center.x))*2/3
+            
             if(item.y < center.y){  // 受影响的子容器在上方
-                item.element.style.top = item.y - sub_content_height*1.5 - sub_content_radius*sinA/2 + "px"
+               
+                    item.element.style.top = item.y - sub_x - sub_content_radius*sinA*2/3 + "px"
+               
+                // item.element.style.top = item.y - sub_content_height*1.5*sinA/2 - sub_content_radius*sinA/2 + "px"
+                // item.element.style.top = item.x - sub_content_width/2 - center.x
             }else{                  // 受影响的子容器在下方
-                item.element.style.top = item.y + sub_content_height*1.5 + sub_content_radius*sinA/2 + "px"
+              
+                    item.element.style.top = item.y + sub_x + sub_content_radius*sinA*2/3 + "px"
+               
+                // item.element.style.top = item.y + sub_content_height*1.5*sinA/2 + sub_content_radius*sinA/2 + "px"
             }
             // item.element.style.transform = "scale(0.8)"
             
