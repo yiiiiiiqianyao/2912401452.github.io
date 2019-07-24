@@ -573,8 +573,8 @@ function init_el_wrap(content,img_arr,aspect){
 
 
             // var sub_x = (sub_content_radius - Math.abs(item.x - sub_content_width/2 - center.x))*2/3
-            var sub_x = (sub_content_radius - Math.abs(item.x - center.x))*2/3
-            // var sub_x = (sub_content_radius - Math.sqrt(aX*aX + aY*aY))/2
+            // var sub_x = (sub_content_radius - Math.abs(item.x - center.x))*2/3
+            var sub_x = (sub_content_radius - Math.sqrt(aX*aX + aY*aY))/2
             
             if(item.y < center.y){  // 受影响的子容器在上方
                
