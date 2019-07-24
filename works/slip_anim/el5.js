@@ -561,9 +561,9 @@ function init_el_wrap(content,img_arr,aspect){
           
 
             if(item.y < center.y){  // 受影响的子容器在上方
-                item.element.style.top = item.y - sub_content_height/2 - sub_content_radius*sinA + "px"
+                item.element.style.top = item.y - sub_content_height*1.5 - sub_content_radius*sinA/2 + "px"
             }else{                  // 受影响的子容器在下方
-                item.element.style.top = item.y + sub_content_height/2 + sub_content_radius*sinA + "px"
+                item.element.style.top = item.y + sub_content_height*1.5 + sub_content_radius*sinA/2 + "px"
             }
             // item.element.style.transform = "scale(0.8)"
             
