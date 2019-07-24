@@ -111,6 +111,7 @@ function init_el_wrap(content,img_arr,aspect){
                 if(item.x < 0){
                     item.x = sub_content_right
                 }
+                item.element.style.zIndex = "0"
                 item.element.style.left = item.x + "px"
                 item.element.style.top = item.y + "px"
                 // item.element.style.transform = "scale(1)"
@@ -204,7 +205,7 @@ function init_el_wrap(content,img_arr,aspect){
                     selected_sub_content.x = move_e.clientX - content_wrap_left
                     selected_sub_content.y = move_e.clientY - content_top
 
-                    current_sub_content.style.zIndex = "1"
+                    current_sub_content.style.zIndex = "2"
                     current_sub_content.style.transform = "scale(3)"
                     current_sub_content.style.left = selected_sub_content.x + "px"
                     current_sub_content.style.top = selected_sub_content.y + "px"
@@ -220,7 +221,7 @@ function init_el_wrap(content,img_arr,aspect){
                 selected_sub_content.y = move_e.clientY - content_top - offset_y
 
 
-                current_sub_content.style.zIndex = "1"
+                current_sub_content.style.zIndex = "2"
                 current_sub_content.style.left = selected_sub_content.x + "px"
                 current_sub_content.style.top = selected_sub_content.y + "px"
             }
@@ -250,7 +251,7 @@ function init_el_wrap(content,img_arr,aspect){
 
                     current_sub_content.style.top = content_center.y + "px"
                     current_sub_content.style.left = content_center.x + "px "
-                    current_sub_content.style.zIndex = "1"
+                    current_sub_content.style.zIndex = "2"
                     current_sub_content.style.transition = "0.5s"
                     setTimeout(function(){
                         current_sub_content.style.transition = "0s"
@@ -303,7 +304,7 @@ function init_el_wrap(content,img_arr,aspect){
 
                         current_sub_content.style.transition = "0.5s"
                         current_sub_content.style.transform = "scale(3)"
-                        current_sub_content.style.zIndex = "1"
+                        current_sub_content.style.zIndex = "2"
                         current_sub_content.style.top = selected_sub_content.y + "px"
                         current_sub_content.style.left = selected_sub_content.x + "px"
 
@@ -365,7 +366,7 @@ function init_el_wrap(content,img_arr,aspect){
                     selected_sub_content.x = move_e.changedTouches[0].clientX - content_wrap_left
                     selected_sub_content.y = move_e.changedTouches[0].clientY - content_top
 
-                    current_sub_content.style.zIndex = "1"
+                    current_sub_content.style.zIndex = "2"
                     current_sub_content.style.transform = "scale(3)"
                     current_sub_content.style.left = selected_sub_content.x + "px"
                     current_sub_content.style.top = selected_sub_content.y + "px"
@@ -381,7 +382,7 @@ function init_el_wrap(content,img_arr,aspect){
                 selected_sub_content.y = move_e.changedTouches[0].clientY - content_top - offset_y
 
 
-                current_sub_content.style.zIndex = "1"
+                current_sub_content.style.zIndex = "2"
                 current_sub_content.style.left = selected_sub_content.x + "px"
                 current_sub_content.style.top = selected_sub_content.y + "px"
             }
@@ -409,7 +410,7 @@ function init_el_wrap(content,img_arr,aspect){
 
                     current_sub_content.style.top = content_center.y + "px"
                     current_sub_content.style.left = content_center.x + "px "
-                    current_sub_content.style.zIndex = "1"
+                    current_sub_content.style.zIndex = "2"
                     current_sub_content.style.transition = "0.5s"
                     setTimeout(function(){
                         current_sub_content.style.transition = "0s"
@@ -458,7 +459,7 @@ function init_el_wrap(content,img_arr,aspect){
 
                         current_sub_content.style.transition = "0.5s"
                         current_sub_content.style.transform = "scale(3)"
-                        current_sub_content.style.zIndex = "1"
+                        current_sub_content.style.zIndex = "2"
                         current_sub_content.style.top = selected_sub_content.y + "px"
                         current_sub_content.style.left = selected_sub_content.x + "px"
 
@@ -558,22 +559,38 @@ function init_el_wrap(content,img_arr,aspect){
             let aXY = Math.sqrt(aX*aX + aY*aY)
 
             let sinA = aY / aXY
-          
+            let cosA = aX / aXY
+            item.element.style.zIndex = "1"
+
+            //----
+            // if(item.y < center.y && item.y > center.y - sub_content_radius){ // r-l
+            //     item.element.style.top = item.y - (item.y - (center.y - sub_content_radius))*sinA + "px"
+            // }else if(item.y > center.y && item.y < center.y + sub_content_radius){
+            //     item.element.style.top = item.y + (center.y + sub_content_radius - item.y)*sinA + "px"
+            // }
+
+            //----
+
+
+            // var sub_x = (sub_content_radius - Math.abs(item.x - sub_content_width/2 - center.x))*2/3
             var sub_x = (sub_content_radius - Math.abs(item.x - center.x))*2/3
+            // var sub_x = (sub_content_radius - Math.sqrt(aX*aX + aY*aY))/2
             
             if(item.y < center.y){  // 受影响的子容器在上方
                
-                    item.element.style.top = item.y - sub_x - sub_content_radius*sinA*2/3 + "px"
-               
+                // item.element.style.zIndex = "1"
+                // item.element.style.top = item.y - sub_x*sinA - sub_content_radius*sinA*2/3 + "px"
+                item.element.style.top = item.y - sub_x - sub_content_radius*sinA*2/3 + "px"
+                
                 // item.element.style.top = item.y - sub_content_height*1.5*sinA/2 - sub_content_radius*sinA/2 + "px"
                 // item.element.style.top = item.x - sub_content_width/2 - center.x
             }else{                  // 受影响的子容器在下方
               
-                    item.element.style.top = item.y + sub_x + sub_content_radius*sinA*2/3 + "px"
-               
+                // item.element.style.top = item.y + sub_x*sinA + sub_content_radius*sinA*2/3 + "px"
+                item.element.style.top = item.y + sub_x + sub_content_radius*sinA*2/3 + "px"
                 // item.element.style.top = item.y + sub_content_height*1.5*sinA/2 + sub_content_radius*sinA/2 + "px"
             }
-            // item.element.style.transform = "scale(0.8)"
+            
             
         })
     }
