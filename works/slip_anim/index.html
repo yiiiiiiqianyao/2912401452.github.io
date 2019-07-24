@@ -17,35 +17,44 @@
             width:30%;
             height: 600px; 
         }
-        .change{
+        .up_btn{
             position: absolute;
-            top: 10px;
-            width: 60px;
+            width: 80px;
+            top: 20px;
             text-align: center;
             font-weight: 600;
             border: 1px solid rgb(11, 83, 238);
             color: rgb(11, 83, 238);
-            background-color: rgba(86, 168, 235, 0.692);
+            /* background-color: rgba(86, 168, 235, 0.692); */
+            background-color: #ffffff94;
             border-radius: 5px;
             padding: 10px;
             z-index: 2;
             cursor: pointer;
         }
-        .change:first{
+        .up_btn:first{
             left: 20px;
         }
-        .change:nth-child(2){
-            left: 100px;
+        .up_btn:nth-child(2){
+            left: 120px;
         }
-        .change:hover{
+        .up_btn:nth-child(3){
+            left: 240px;
+        }
+        .up_btn:nth-child(4){
+            left: 360px;
+        }
+        .up_btn:hover{
             transform: translateY(-1px);
-            box-shadow: 0 0 10px rgba(124, 228, 228, 0.692);
+            box-shadow: 0 0 10px rgb(11, 83, 238);
         }
     </style>
 </head>
 <body>
-    <div class="change" onclick="up(1)">update</div>
-    <div class="change" onclick="up(2)">back</div>
+    <div class="up_btn" onclick="up(1)">update</div>
+    <div class="up_btn" onclick="up(2)">back</div>
+    <div class="up_btn" onclick="fullScreen()">fullScreen</div>
+    <div class="up_btn" onclick="exitScreen()">exitScreen</div>
     <div id="content"></div>
 </body>
 <script>
@@ -74,14 +83,32 @@
     // }
     // window.onclick = fullScreen
     // fullScreen()
-    // //全屏
-    // function fullScreen(){
-    //     var el = document.documentElement;
-    //     var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
-    //         if(typeof rfs != "undefined" && rfs) {
-    //             rfs.call(el);
-    //         };
-    //         return;
-    // }
+    //全屏
+    function fullScreen(){
+        var el = document.documentElement;
+        var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
+            if(typeof rfs != "undefined" && rfs) {
+                rfs.call(el);
+            };
+            return;
+    }
+     //退出全屏
+     function exitScreen(){
+            if (document.exitFullscreen) {  
+                document.exitFullscreen();  
+            }  
+            else if (document.mozCancelFullScreen) {  
+                document.mozCancelFullScreen();  
+            }  
+            else if (document.webkitCancelFullScreen) {  
+                document.webkitCancelFullScreen();  
+            }  
+            else if (document.msExitFullscreen) {  
+                document.msExitFullscreen();  
+            } 
+            if(typeof cfs != "undefined" && cfs) {
+                cfs.call(el);
+            }
+        }
 </script>
 </html>
