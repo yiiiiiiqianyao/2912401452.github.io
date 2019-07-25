@@ -40,7 +40,7 @@
     <script src="js/data.js"></script>
     <script>
 		var radius = document.getElementById("main").clientWidth
-		// console.log(wrap.clientWidth)
+		console.log(radius)
 		var img_list = [ "img/1.jpg" , "img/2.png" , "img/3.jpg" , "img/4.jpg" , "img/5.png" , "img/6.png"]
 		var is_rotate = true
 		/*------model object init------*/
@@ -63,7 +63,7 @@
 			this.disX = 350;
 			this.disY = 350;
 			this.disZ = 600;
-			this.oUlZ = -radius;
+			this.oUlZ = -radius*3/4;
 			this.rotateX = 0;
 			this.rotateY = 0;
      	}
