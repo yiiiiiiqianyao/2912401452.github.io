@@ -63,7 +63,7 @@
 			this.disX = 350;
 			this.disY = 350;
 			this.disZ = 600;
-			this.oUlZ = -radius;
+			this.oUlZ = -radius*1.2;
 			this.rotateX = 0;
 			this.rotateY = 0;
      	}
@@ -94,9 +94,9 @@
        			this.aLi[i].x = i % 5;	// 确定元素的位置(排列位置)
        			this.aLi[i].y = ~~(i % 25 / 5);
        			this.aLi[i].z = 4 - ~~(i / 25);
-       			this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX,//设置元素的位置（空间位置）
-       			this.aLi[i].poy = (this.aLi[i].y - 2)*this.disY,
-       			this.aLi[i].poz = (this.aLi[i].z - 3)*this.disZ + 500;
+       			this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX*1.5,//设置元素的位置（空间位置）
+       			this.aLi[i].poy = (this.aLi[i].y - 2)*this.disY*1.5,
+       			this.aLi[i].poz = (this.aLi[i].z - 3)*this.disZ*1.5 + 500;
        			this.aLi[i].style.transform = "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+this.aLi[i].poz+"px)";
      		}
      	}
