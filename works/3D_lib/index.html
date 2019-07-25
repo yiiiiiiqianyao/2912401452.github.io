@@ -199,13 +199,13 @@
      			cutX = event.clientX - x;
      			cutY = event.clientY - y;
 				magic.rotateX += -cutY*.02;
-				if(magic.rotateX > 60){
+				if(magic.rotateX > 45){
 					magic.rotateX -= -cutY*.02
-				}else if(magic.rotateX < -60){
+				}else if(magic.rotateX < -45){
 					magic.rotateX -= -cutY*.02
 				}
 				// console.log(magic.rotateX)
-     			magic.rotateY += cutX*.02;
+     			magic.rotateY += cutX*.005;
    				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
    											"px) rotateX("+magic.rotateX+
    											"deg) rotateY("+magic.rotateY+"deg)";
@@ -226,12 +226,12 @@
      			cutX = event.changedTouches[0].clientX - x;
      			cutY = event.changedTouches[0].clientY - y;
 				magic.rotateX += -cutY*.02;
-				if(magic.rotateX > 60){
+				if(magic.rotateX > 45){
 					magic.rotateX -= -cutY*.02
-				}else if(magic.rotateX < -60){
+				}else if(magic.rotateX < -45){
 					magic.rotateX -= -cutY*.02
 				}
-     			magic.rotateY += cutX*.02;
+     			magic.rotateY += cutX*.005;
    				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
    											"px) rotateX("+magic.rotateX+
    											"deg) rotateY("+magic.rotateY+"deg)";
