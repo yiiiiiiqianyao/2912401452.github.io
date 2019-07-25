@@ -25,6 +25,8 @@
 						<li id="" onclick="fullScreen()">fullScreen</li>
 						<li id="" onclick="exitScreen()">exitScreen</li>
 						<li onclick="triggar()">trigger</li>
+						<li onclick="update()">update</li>
+						<li onclick="back()">back</li>
                     </ul>
                 </div>
             </div>
@@ -37,6 +39,8 @@
     </body>
     <script src="js/data.js"></script>
     <script>
+		var radius = document.getElementById("main").clientWidth
+		// console.log(wrap.clientWidth)
 		var img_list = [ "img/1.jpg" , "img/2.png" , "img/3.jpg" , "img/4.jpg" , "img/5.png" , "img/6.png"]
 		var is_rotate = true
 		/*------model object init------*/
@@ -112,7 +116,8 @@
 					this.aLi[i].poy = -400
 				}
 				this.aLi[i].rotateY = i*(360/25)
-				this.aLi[i].poz = 1250
+				// this.aLi[i].poz = 1250
+				this.aLi[i].poz = radius
 
 				// this.aLi[i].pox = 0;
      			// this.aLi[i].poy = ~~(i%25/5)*200-200;
@@ -199,9 +204,9 @@
      			cutX = event.clientX - x;
      			cutY = event.clientY - y;
 				magic.rotateX += -cutY*.02;
-				if(magic.rotateX > 45){
+				if(magic.rotateX > 25){
 					magic.rotateX -= -cutY*.02
-				}else if(magic.rotateX < -45){
+				}else if(magic.rotateX < -25){
 					magic.rotateX -= -cutY*.02
 				}
 				// console.log(magic.rotateX)
@@ -226,9 +231,9 @@
      			cutX = event.changedTouches[0].clientX - x;
      			cutY = event.changedTouches[0].clientY - y;
 				magic.rotateX += -cutY*.02;
-				if(magic.rotateX > 45){
+				if(magic.rotateX > 25){
 					magic.rotateX -= -cutY*.02
-				}else if(magic.rotateX < -45){
+				}else if(magic.rotateX < -25){
 					magic.rotateX -= -cutY*.02
 				}
      			magic.rotateY += cutX*.005;
@@ -281,6 +286,7 @@
 			alert_box.style.height = "0"
 			alert_box.style.top = "50%"
 			alert_box.style.left = "50%"
+			alert_box.style.border = ""
 		}
 		// animate
 		rotate_scene()
@@ -345,6 +351,20 @@
 			list.forEach(function(element){
 				element.style.backfaceVisibility = "hidden"
 			})
+		}
+	
+		function update(){
+			for(var i = 0;i < magic.aLi.length;i++){
+				magic.aLi[i].style.backgroundImage = `url(img/2.png)`
+			}
+		}
+
+		function back(){
+			for(var i = 0;i < magic.aLi.length;i++){
+				var index = Math.floor(Math.random() * img_list.length)
+				var img_src = img_list[ index ]
+				magic.aLi[i].style.backgroundImage = `url('${img_src}')`
+			}
 		}
 	</script>
 </html>
