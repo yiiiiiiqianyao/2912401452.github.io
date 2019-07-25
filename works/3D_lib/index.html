@@ -48,7 +48,7 @@
 		oImg.src = "img/1.jpg"
 		oImg.onload = function(){
 			var oUL = document.getElementById('list').children[0]
-			while(oImg.width > 250){
+			while(oImg.width > radius/5){
 				oImg.width = oImg.width / 1.5
 				oImg.height = oImg.height / 1.5
 			}
@@ -116,8 +116,8 @@
 					this.aLi[i].poy = -400
 				}
 				this.aLi[i].rotateY = i*(360/25)
-				// this.aLi[i].poz = 1250
-				this.aLi[i].poz = radius
+				// this.aLi[i].poz = 3000
+				// this.aLi[i].poz = radius
 
 				// this.aLi[i].pox = 0;
      			// this.aLi[i].poy = ~~(i%25/5)*200-200;
@@ -125,7 +125,7 @@
 				// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
 
      			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg)"+
-     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1250px)";
+     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*0.8+"px)";
      		}
      	}
      	
@@ -157,7 +157,7 @@
 					this.aLi[i].rotateY = i*(360/17)
 				}
 				this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
-				 "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
+				 "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*0.8+"px)";
 				 
 				// this.aLi[i].pox = 0;
      			// this.aLi[i].poy = ~~(i%25/5)*200-600;
