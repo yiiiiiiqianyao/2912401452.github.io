@@ -152,7 +152,7 @@
 				// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
 
      			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg)"+
-     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius+"px)";
+     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*1.2+"px)";
      		}
      	}
      	
@@ -397,6 +397,37 @@
 				magic.aLi[i].style.backgroundImage = `url('${img_src}')`
 			}
 		}
+	
+	
+		(function(window, document) {
+  var hotcss = {};
+
+  (function() {
+    // 根据devicePixelRatio自定计算scale
+    var viewportEl = document.querySelector('meta[name="viewport"]')
+    var dpr = window.devicePixelRatio || 1
+
+    dpr = dpr >= 3 ? 3 : (dpr >= 2 ? 2 : 1)
+
+    document.documentElement.setAttribute('data-dpr', dpr)
+    hotcss.dpr = dpr
+
+    var scale = 1 / dpr
+    var content = 'width=device-width, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=no'
+
+    if (viewportEl) {
+      viewportEl.setAttribute('content', content)
+    } else {
+      viewportEl = document.createElement('meta')
+      viewportEl.setAttribute('name', 'viewport')
+      viewportEl.setAttribute('content', content)
+      document.head.appendChild(viewportEl)
+    }
+  })()
+
+  window.hotcss = hotcss
+})(window, document)
+	
 	</script>
 </html>
 
