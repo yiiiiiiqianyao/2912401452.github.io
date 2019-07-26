@@ -41,7 +41,34 @@
     <script>
 		var radius = document.getElementById("main").clientWidth
 		// console.log(wrap.clientWidth)
-		var img_list = [ "img/1.jpg" , "img/2.png" , "img/3.jpg" , "img/4.jpg" , "img/5.png" , "img/6.png"]
+		// var img_list = [
+		// 	"img/1.jpg" ,
+		// 	"img/2.png" ,
+		// 	"img/3.jpg" ,
+		// 	"img/4.jpg" ,
+		// 	"img/5.png" ,
+		// 	"img/6.png"
+		// ]
+		var img_list = [
+			{
+				src:"img/1.jpg"
+			},
+			{
+				src:"img/2.png"
+			},
+			{
+				src:"img/3.jpg"
+			},
+			{
+				src:"img/4.jpg"
+			},
+			{
+				src:"img/5.png"
+			},
+			{
+				src:"img/6.png"
+			}
+		]
 		var is_rotate = true
 		/*------model object init------*/
 		var oImg = new Image()
@@ -63,7 +90,7 @@
 			this.disX = 350;
 			this.disY = 350;
 			this.disZ = 600;
-			this.oUlZ = -radius*1.2;
+			this.oUlZ = -radius*1.3;
 			this.rotateX = 0;
 			this.rotateY = 0;
      	}
@@ -72,15 +99,15 @@
      		var fragment = document.createDocumentFragment();//使用文档片段 轻量级
      		for(var i=0;i<this.liNum;i++){
      			var oLi = document.createElement('li');
-				var data = flyData[0];
+				
 				var index = Math.floor(Math.random() * img_list.length)
-				var img_src = img_list[ index ]
+				var img_src = img_list[ index ].src
 				oLi.style.backgroundImage = `url('${img_src}')`
 				oLi.style.backgroundSize = "100% 100%"
-     			// oLi.innerHTML = //"<b class='liCover'></b>"+
-				//      			"<p class='liTitle'>"+data.type+"</p>"+
-				//      			"<p class='liAuthor'>"+data.author+"</p>"+
-				//      			"<p class='liTime'>"+data.time+"</p>"
+				
+     			oLi._my_info = {
+					 index:index
+				 }
 				fragment.appendChild(oLi);
      		}
      		this.oUl.appendChild(fragment);//避免直接的DOM插入
@@ -105,15 +132,15 @@
      		for(var i = 0;i < this.liNum;i++){
 				this.aLi[i].pox = 0
 				if(i < 25){
-					this.aLi[i].poy = 400
+					this.aLi[i].poy = 380
 				}else if(i < 50){
-					this.aLi[i].poy = 200
+					this.aLi[i].poy = 190
 				}else if(i < 75){
 					this.aLi[i].poy = 0
 				}else if(i < 100){
-					this.aLi[i].poy = -200
+					this.aLi[i].poy = -190
 				}else{
-					this.aLi[i].poy = -400
+					this.aLi[i].poy = -380
 				}
 				this.aLi[i].rotateY = i*(360/25)
 				// this.aLi[i].poz = 3000
@@ -125,7 +152,7 @@
 				// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
 
      			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg)"+
-     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*0.8+"px)";
+     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*1.2+"px)";
      		}
      	}
      	
@@ -261,13 +288,17 @@
      	
      	magic.oUl.onmouseup = function(e){
 			
-			// console.log(e.target.style)
 			if(e){
+				// target_info
+				var target_info = e.target._my_info
+				console.log(target_info)
+				// alert_box show
 				alert_box.style.width = "80%"
 				alert_box.style.height = "80%"
 				alert_box.style.top = "10%"
 				alert_box.style.left = "10%"
-				// alert_box.innerHTML = ""
+				alert_box.style.border = "1px solid #70caff"
+				// alert_box content
 				alert_box.innerHTML = `
 					<img src="${ e.target.style.backgroundImage.split('"')[1] }"/>
 					
@@ -286,7 +317,7 @@
 			alert_box.style.height = "0"
 			alert_box.style.top = "50%"
 			alert_box.style.left = "50%"
-			
+			alert_box.style.border  =""
 		}
 		// animate
 		rotate_scene()
