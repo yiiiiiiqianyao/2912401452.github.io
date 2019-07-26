@@ -393,40 +393,40 @@
 		function back(){
 			for(var i = 0;i < magic.aLi.length;i++){
 				var index = Math.floor(Math.random() * img_list.length)
-				var img_src = img_list[ index ]
-				magic.aLi[i].style.backgroundImage = `url('${img_src}')`
+				// var img_src = img_list[ index ]
+				magic.aLi[i].style.backgroundImage = `url('${img_list[index].src}')`
 			}
 		}
 	
-	
+		// 适配 PC 大屏
 		(function(window, document) {
-  var hotcss = {};
+			var hotcss = {};
 
-  (function() {
-    // 根据devicePixelRatio自定计算scale
-    var viewportEl = document.querySelector('meta[name="viewport"]')
-    var dpr = window.devicePixelRatio || 1
+			(function() {
+				// 根据devicePixelRatio自定计算scale
+				var viewportEl = document.querySelector('meta[name="viewport"]')
+				var dpr = window.devicePixelRatio || 1
 
-    dpr = dpr >= 3 ? 3 : (dpr >= 2 ? 2 : 1)
+				dpr = dpr >= 3 ? 3 : (dpr >= 2 ? 2 : 1)
 
-    document.documentElement.setAttribute('data-dpr', dpr)
-    hotcss.dpr = dpr
+				document.documentElement.setAttribute('data-dpr', dpr)
+				hotcss.dpr = dpr
 
-    var scale = 1 / dpr
-    var content = 'width=device-width, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=no'
+				var scale = 1 / dpr
+				var content = 'width=device-width, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=no'
 
-    if (viewportEl) {
-      viewportEl.setAttribute('content', content)
-    } else {
-      viewportEl = document.createElement('meta')
-      viewportEl.setAttribute('name', 'viewport')
-      viewportEl.setAttribute('content', content)
-      document.head.appendChild(viewportEl)
-    }
-  })()
+				if (viewportEl) {
+				viewportEl.setAttribute('content', content)
+				} else {
+				viewportEl = document.createElement('meta')
+				viewportEl.setAttribute('name', 'viewport')
+				viewportEl.setAttribute('content', content)
+				document.head.appendChild(viewportEl)
+				}
+			})()
 
-  window.hotcss = hotcss
-})(window, document)
+			window.hotcss = hotcss
+		})(window, document)
 	
 	</script>
 </html>
