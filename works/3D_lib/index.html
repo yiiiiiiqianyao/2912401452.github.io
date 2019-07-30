@@ -42,6 +42,7 @@
 		var radius = document.getElementById("main").clientWidth
 		var screen_width = document.getElementById("main").clientWidth
 		var screen_height = document.getElementById("main").clientHeight
+		var update,back
 		// console.log(screen_width,screen_height)
 		var current_mode = 'Grid'	// Grid Helix Sphere
 		var img_list = [
@@ -137,7 +138,7 @@
 					this.aLi[i].x = i % 5;	// 确定元素的位置(排列位置)
 					this.aLi[i].y = ~~(i % 25 / 5);
 					this.aLi[i].z = 4 - ~~(i / 25);
-					this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX*1.5,//设置元素的位置（空间位置）
+					this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX*1.5 - oImg.width/2,//设置元素的位置（空间位置）
 					this.aLi[i].poy = (this.aLi[i].y - 2)*this.disY*1.5,
 					this.aLi[i].poz = (this.aLi[i].z - 3)*this.disZ*1.5 + 500;
 					this.aLi[i].style.transform = "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+this.aLi[i].poz+"px)";
@@ -293,7 +294,6 @@
 				}
 			}
 
-			
 			var magic = new Magic();
 
 			magic.init();//创建li元素
@@ -345,22 +345,49 @@
 					`
 				}
 			}
-			
 			// animate
 			rotate_scene()
 			function rotate_scene(){
-				// magic.oUlZ += 0.05
-				// magic.rotateX += 0.05
+				
 				magic.rotateY += 0.05
 				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
 												"px) rotateX("+magic.rotateX+
 												"deg) rotateY("+magic.rotateY+"deg)";
 				ainimate_timer = requestAnimationFrame(rotate_scene)
-				//return timer
 			} 
 			
-			//全屏
-			function fullScreen(){
+			function set_backface_visiable(){
+				var list = document.querySelectorAll("#list li")
+				list.forEach(function(element){
+					element.style.backfaceVisibility = "visible"
+				})
+			}
+
+			function set_backface_unvisiablb(){
+				var list = document.querySelectorAll("#list li")
+				list.forEach(function(element){
+					element.style.backfaceVisibility = "hidden"
+				})
+			}
+		
+			update = function(){
+				for(var i = 0;i < magic.aLi.length;i++){
+					magic.aLi[i].style.backgroundImage = `url(img/2.png)`
+				}
+			}
+
+			back = function(){
+				for(var i = 0;i < magic.aLi.length;i++){
+					var index = Math.floor(Math.random() * img_list.length)
+					// var img_src = img_list[ index ]
+					magic.aLi[i].style.backgroundImage = `url('${img_list[index].src}')`
+				}
+			}
+
+		}
+
+		//全屏
+		function fullScreen(){
 				var el = document.documentElement;
 				var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
 					if(typeof rfs != "undefined" && rfs) {
@@ -368,8 +395,8 @@
 					};
 				return;
 			}
-			//退出全屏
-			function exitScreen(){
+		//退出全屏
+		function exitScreen(){
 				if (document.exitFullscreen) {  
 					document.exitFullscreen();  
 				}  
@@ -386,46 +413,6 @@
 					cfs.call(el);
 				}
 			}
-			
-			// function triggar(){
-			// 	if(is_rotate){
-			// 		cancelAnimationFrame(ainimate_timer)
-			// 		is_rotate = !is_rotate
-			// 	}else{
-			// 		rotate_scene()
-			// 		is_rotate = !is_rotate
-			// 	}
-			// }
-		
-			function set_backface_visiable(){
-				var list = document.querySelectorAll("#list li")
-				list.forEach(function(element){
-					element.style.backfaceVisibility = "visible"
-				})
-			}
-
-			function set_backface_unvisiablb(){
-				var list = document.querySelectorAll("#list li")
-				list.forEach(function(element){
-					element.style.backfaceVisibility = "hidden"
-				})
-			}
-		
-			function update(){
-				for(var i = 0;i < magic.aLi.length;i++){
-					magic.aLi[i].style.backgroundImage = `url(img/2.png)`
-				}
-			}
-
-			function back(){
-				for(var i = 0;i < magic.aLi.length;i++){
-					var index = Math.floor(Math.random() * img_list.length)
-					// var img_src = img_list[ index ]
-					magic.aLi[i].style.backgroundImage = `url('${img_list[index].src}')`
-				}
-			}
-
-		}
 	
 		// 适配 PC 大屏
 		// (function(window, document) {
