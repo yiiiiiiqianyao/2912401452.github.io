@@ -40,15 +40,10 @@
     <script src="js/data.js"></script>
     <script>
 		var radius = document.getElementById("main").clientWidth
-		// console.log(wrap.clientWidth)
-		// var img_list = [
-		// 	"img/1.jpg" ,
-		// 	"img/2.png" ,
-		// 	"img/3.jpg" ,
-		// 	"img/4.jpg" ,
-		// 	"img/5.png" ,
-		// 	"img/6.png"
-		// ]
+		var screen_width = document.getElementById("main").clientWidth
+		var screen_height = document.getElementById("main").clientHeight
+		// console.log(screen_width,screen_height)
+		var current_mode = 'Grid'	// Grid Helix Sphere
 		var img_list = [
 			{
 				src:"img/1.jpg"
@@ -70,248 +65,8 @@
 			}
 		]
 		var is_rotate = true
-		/*------model object init------*/
-		var oImg = new Image()
-		oImg.src = "img/1.jpg"
-		oImg.onload = function(){
-			var oUL = document.getElementById('list').children[0]
-			while(oImg.width > radius/5){
-				oImg.width = oImg.width / 1.5
-				oImg.height = oImg.height / 1.5
-			}
-			oUL.style.width = oImg.width + "px"
-			oUL.style.height = oImg.height + "px"
-		}
-
-     	function Magic(){
-     		this.liNum = 125;
-			this.oUl = document.getElementById('list').children[0];
-			this.aLi = this.oUl.children;
-			this.disX = 350;
-			this.disY = 350;
-			this.disZ = 600;
-			this.oUlZ = -radius*1.3;
-			this.rotateX = 0;
-			this.rotateY = 0;
-     	}
-     	
-     	Magic.prototype.init = function(){//创建li元素
-     		var fragment = document.createDocumentFragment();//使用文档片段 轻量级
-     		for(var i=0;i<this.liNum;i++){
-     			var oLi = document.createElement('li');
-				
-				var index = Math.floor(Math.random() * img_list.length)
-				var img_src = img_list[ index ].src
-				oLi.style.backgroundImage = `url('${img_src}')`
-				oLi.style.backgroundSize = "100% 100%"
-				
-     			oLi._my_info = {
-					 index:index
-				 }
-				fragment.appendChild(oLi);
-     		}
-     		this.oUl.appendChild(fragment);//避免直接的DOM插入
-     		
-     	}
-     	
-     	Magic.prototype.grid = function(){
-     		
-     		for(var i = 0;i < this.liNum;i++){
-     			this.aLi[i].index = i;	// 保存排序
-       			this.aLi[i].x = i % 5;	// 确定元素的位置(排列位置)
-       			this.aLi[i].y = ~~(i % 25 / 5);
-       			this.aLi[i].z = 4 - ~~(i / 25);
-       			this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX*1.5,//设置元素的位置（空间位置）
-       			this.aLi[i].poy = (this.aLi[i].y - 2)*this.disY*1.5,
-       			this.aLi[i].poz = (this.aLi[i].z - 3)*this.disZ*1.5 + 500;
-       			this.aLi[i].style.transform = "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+this.aLi[i].poz+"px)";
-     		}
-     	}
-     	
-     	Magic.prototype.helix = function(){
-     		for(var i = 0;i < this.liNum;i++){
-				this.aLi[i].pox = 0
-				if(i < 25){
-					this.aLi[i].poy = 380
-				}else if(i < 50){
-					this.aLi[i].poy = 190
-				}else if(i < 75){
-					this.aLi[i].poy = 0
-				}else if(i < 100){
-					this.aLi[i].poy = -190
-				}else{
-					this.aLi[i].poy = -380
-				}
-				this.aLi[i].rotateY = i*(360/25)
-				// this.aLi[i].poz = 3000
-				// this.aLi[i].poz = radius
-
-				// this.aLi[i].pox = 0;
-     			// this.aLi[i].poy = ~~(i%25/5)*200-200;
-     			// this.aLi[i].poz = 1250;
-				// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
-
-     			this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg)"+
-     			"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*1.1+"px)";
-     		}
-     	}
-     	
-     	Magic.prototype.sphere = function(){
-     		for(var i = 0;i < this.liNum;i++){
-				this.aLi[i].pox = 0
-				// this.aLi[i].poz = 3000
-				this.aLi[i].rotateY = 0
-				this.aLi[i].rotateX = 0
-				if(i < 17){
-					this.aLi[i].poy = 200//~~(i%25/5)*200///-600
-					this.aLi[i].rotateX = 65
-					this.aLi[i].rotateY = i*(360/17)
-				}else if(i < 45){
-					this.aLi[i].poy = 100
-					this.aLi[i].rotateX = 35
-					this.aLi[i].rotateY = i*(360/28)
-				}else if(i < 80){
-					this.aLi[i].poy = 0
-					this.aLi[i].rotateX = 0
-					this.aLi[i].rotateY = i*(360/35)
-				}else if(i < 108){
-					this.aLi[i].poy = -100
-					this.aLi[i].rotateX = -35
-					this.aLi[i].rotateY = i*(360/28)
-				}else{
-					this.aLi[i].poy = -200
-					this.aLi[i].rotateX = -65
-					this.aLi[i].rotateY = i*(360/17)
-				}
-				this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
-				 "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+radius*0.8+"px)";
-				 
-				// this.aLi[i].pox = 0;
-     			// this.aLi[i].poy = ~~(i%25/5)*200-600;
-     			// this.aLi[i].poz = 1000;
-     			// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
-				// this.aLi[i].rotateX = ~~(i%25/5)*36-80;//绕X轴转的度数
-     			// this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
-     			// "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
-     		}
-     	}
-     	
-     	document.addEventListener('mousewheel',function(event){
-			// console.log(magic.oUlZ)
-			if(magic.oUlZ < -3000){
-				magic.oUlZ = -2999
-				return
-			}else if(magic.oUlZ > 800){
-				magic.oUlZ = 799
-				return
-			}
-     		if (!event) event = window.event;
-     		var delta = 0;
-		  
-		    if (event.wheelDelta) {//IE、chrome浏览器使用的是wheelDelta，并且值为“正负120”
-		        delta = event.wheelDelta/120; 
-		        if (window.opera) delta = -delta;//因为IE、chrome等向下滚动是负值，FF是正值，为了处理一致性，在此取反处理
-		    } else if (event.detail) {//FF浏览器使用的是detail,其值为“正负3”
-		        delta = -event.detail/3;
-		    }
-     		magic.oUlZ -= delta*400;
-     		magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
-     									"px) rotateX("+magic.rotateX+
-     									"deg) rotateY("+magic.rotateY+"deg)";
-		 })//end of mousewheel
-     	
-     	document.onmousedown=function(event){
-     		if (!event) event = window.event;
-     		var x = event.clientX,
-     			y = event.clientY,
-     			cutX = x,
-     			cuty= y;
-     		document.onmousemove = function(event){
-     			if (!event) event = window.event;
-     			cutX = event.clientX - x;
-     			cutY = event.clientY - y;
-				magic.rotateX += -cutY*.02;
-				if(magic.rotateX > 25){
-					magic.rotateX -= -cutY*.02
-				}else if(magic.rotateX < -25){
-					magic.rotateX -= -cutY*.02
-				}
-				// console.log(magic.rotateX)
-     			magic.rotateY += cutX*.005;
-   				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
-   											"px) rotateX("+magic.rotateX+
-   											"deg) rotateY("+magic.rotateY+"deg)";
-     		}
-     		document.onmouseup = function(){
-     			document.onmousemove = null;
-     		}	
-		}//end of document.onmousedown
-
-		document.ontouchstart = function(event){
-			if (!event) event = window.event;
-     		var x = event.changedTouches[0].clientX,
-     			y = event.changedTouches[0].clientY,
-     			cutX = x,
-				cuty= y;
-			document.ontouchmove = function(event){
-				if (!event) event = window.event;
-     			cutX = event.changedTouches[0].clientX - x;
-     			cutY = event.changedTouches[0].clientY - y;
-				magic.rotateX += -cutY*.02;
-				if(magic.rotateX > 25){
-					magic.rotateX -= -cutY*.02
-				}else if(magic.rotateX < -25){
-					magic.rotateX -= -cutY*.02
-				}
-     			magic.rotateY += cutX*.005;
-   				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
-   											"px) rotateX("+magic.rotateX+
-   											"deg) rotateY("+magic.rotateY+"deg)";
-			}
-			document.ontouchend = function(){
-				document.ontouchmove = null
-			}
-		}
-
 		var ainimate_timer
 		var alert_box = document.getElementById("alert_box")
-     	var magic = new Magic();
-     	magic.init();//创建li元素
-     	magic.grid();//默认为grid模式
-     	var gridBtn = document.getElementById('gridBtn'),
-     		helixBtn = document.getElementById('helixBtn'),
-     		SphereBtn = document.getElementById('SphereBtn');
-     	
-     	gridBtn.onclick = function(){magic.grid();set_backface_visiable()}
-     	helixBtn.onclick = function(){magic.helix();set_backface_unvisiablb()}
-     	SphereBtn.onclick = function(){magic.sphere();set_backface_visiable()}
-     	
-     	magic.oUl.onmouseup = function(e){
-			
-			if(e){
-				// target_info
-				var target_info = e.target._my_info
-				console.log(target_info)
-				// alert_box show
-				alert_box.style.width = "80%"
-				alert_box.style.height = "80%"
-				alert_box.style.top = "10%"
-				alert_box.style.left = "10%"
-				alert_box.style.border = "1px solid #70caff"
-				// alert_box content
-				alert_box.innerHTML = `
-					<img src="${ e.target.style.backgroundImage.split('"')[1] }"/>
-					
-					<p>${ flyData[e.target.index].author }</P>
-					<p>${ flyData[e.target.index].time }</P>
-					<div id="btn">
-						<ul>
-							<li class="close" onclick="close_alert()">close</li>
-						</ul>
-					</div>
-				`
-			}
-		}
 		function close_alert(){
 			alert_box.style.width = "0"
 			alert_box.style.height = "0"
@@ -319,114 +74,388 @@
 			alert_box.style.left = "50%"
 			alert_box.style.border  =""
 		}
-		// animate
-		rotate_scene()
-		function rotate_scene(){
-			// magic.oUlZ += 0.05
-			// magic.rotateX += 0.05
-			magic.rotateY += 0.05
-			magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
-   											"px) rotateX("+magic.rotateX+
-   											"deg) rotateY("+magic.rotateY+"deg)";
-			ainimate_timer = requestAnimationFrame(rotate_scene)
-			//return timer
-		} 
-		 
-		//全屏
-		function fullScreen(){
-            var el = document.documentElement;
-            var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
-                if(typeof rfs != "undefined" && rfs) {
-                    rfs.call(el);
-                };
-              return;
-        }
-        //退出全屏
-        function exitScreen(){
-            if (document.exitFullscreen) {  
-                document.exitFullscreen();  
-            }  
-            else if (document.mozCancelFullScreen) {  
-                document.mozCancelFullScreen();  
-            }  
-            else if (document.webkitCancelFullScreen) {  
-                document.webkitCancelFullScreen();  
-            }  
-            else if (document.msExitFullscreen) {  
-                document.msExitFullscreen();  
-            } 
-            if(typeof cfs != "undefined" && cfs) {
-                cfs.call(el);
-            }
-        }
 		
 		function triggar(){
-			if(is_rotate){
-				cancelAnimationFrame(ainimate_timer)
-				is_rotate = !is_rotate
-			}else{
-				rotate_scene()
-				is_rotate = !is_rotate
+				if(is_rotate){
+					cancelAnimationFrame(ainimate_timer)
+					is_rotate = !is_rotate
+				}else{
+					rotate_scene()
+					is_rotate = !is_rotate
+				}
 			}
-		}
-	
-		function set_backface_visiable(){
-			var list = document.querySelectorAll("#list li")
-			list.forEach(function(element){
-				element.style.backfaceVisibility = "visible"
-			})
-		}
 
-		function set_backface_unvisiablb(){
-			var list = document.querySelectorAll("#list li")
-			list.forEach(function(element){
-				element.style.backfaceVisibility = "hidden"
-			})
-		}
+		/*------model object init------*/
 	
-		function update(){
-			for(var i = 0;i < magic.aLi.length;i++){
-				magic.aLi[i].style.backgroundImage = `url(img/2.png)`
+		var oImg = new Image()
+		oImg.src = "img/1.jpg"
+		oImg.onload = function(){
+			var oUL = document.getElementById('list').children[0]
+			while(oImg.width > radius/5){
+				oImg.width = oImg.width / 1.3
+				oImg.height = oImg.height / 1.3
 			}
-		}
+		
+			oUL.style.width = oImg.width + "px"
+			oUL.style.height = oImg.height + "px"
 
-		function back(){
-			for(var i = 0;i < magic.aLi.length;i++){
-				var index = Math.floor(Math.random() * img_list.length)
-				// var img_src = img_list[ index ]
-				magic.aLi[i].style.backgroundImage = `url('${img_list[index].src}')`
+			function Magic(){
+				this.liNum = 125;
+				this.oUl = document.getElementById('list').children[0];
+				this.aLi = this.oUl.children;
+				this.disX = screen_width / 4
+				this.disY = screen_height / 4
+				this.disZ = radius/4
+				this.oUlZ = -radius*1.3;
+				this.rotateX = 0;
+				this.rotateY = 0;
 			}
+			
+			Magic.prototype.init = function(){//创建li元素
+				var fragment = document.createDocumentFragment();//使用文档片段 轻量级
+				for(var i=0;i<this.liNum;i++){
+					var oLi = document.createElement('li');
+					
+					var index = Math.floor(Math.random() * img_list.length)
+					var img_src = img_list[ index ].src
+					oLi.style.backgroundImage = `url('${img_src}')`
+					oLi.style.backgroundSize = "100% 100%"
+					
+					oLi._my_info = {
+						index:index
+					}
+					fragment.appendChild(oLi);
+				}
+				this.oUl.appendChild(fragment);//避免直接的DOM插入
+				
+			}
+			
+			Magic.prototype.grid = function(){
+				
+				for(var i = 0;i < this.liNum;i++){
+					this.aLi[i].index = i;	// 保存排序
+					this.aLi[i].x = i % 5;	// 确定元素的位置(排列位置)
+					this.aLi[i].y = ~~(i % 25 / 5);
+					this.aLi[i].z = 4 - ~~(i / 25);
+					this.aLi[i].pox = (this.aLi[i].x - 2)*this.disX*1.5,//设置元素的位置（空间位置）
+					this.aLi[i].poy = (this.aLi[i].y - 2)*this.disY*1.5,
+					this.aLi[i].poz = (this.aLi[i].z - 3)*this.disZ*1.5 + 500;
+					this.aLi[i].style.transform = "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+this.aLi[i].poz+"px)";
+				}
+			}
+			
+			Magic.prototype.helix = function(){
+			
+				magic.rotateX = 0
+				magic.rotateY = 0
+				
+				for(var i = 0;i < this.liNum;i++){
+					this.aLi[i].pox = 0
+					if(i < 25){
+						this.aLi[i].poy = oImg.height*2 + 40
+					}else if(i < 50){
+						this.aLi[i].poy = oImg.height + 20
+					}else if(i < 75){
+						this.aLi[i].poy = 0
+					}else if(i < 100){
+						this.aLi[i].poy = -oImg.height - 20
+					}else{
+						this.aLi[i].poy = -oImg.height*2 - 40
+					}
+
+					this.aLi[i].rotateY = i*(360/25)
+
+					this.aLi[i].style.transform = `rotateY(${this.aLi[i].rotateY}deg) translate3D(${this.aLi[i].pox}px,${this.aLi[i].poy}px,${radius*1.1}px)`
+				}
+			}
+			
+			Magic.prototype.sphere = function(){
+				var sphere_r = radius
+				for(var i = 0;i < this.liNum;i++){
+					this.aLi[i].pox = 0
+					this.aLi[i].poy = 0
+					this.aLi[i].rotateY = 0
+					this.aLi[i].rotateX = 0
+					if(i < 17){
+						this.aLi[i].poy = oImg.height*2
+						this.aLi[i].rotateX = 65
+						this.aLi[i].rotateY = i*(360/17)
+					}else if(i < 45){
+						this.aLi[i].poy = oImg.height
+						this.aLi[i].rotateX = 35
+						this.aLi[i].rotateY = i*(360/28)
+					}else if(i < 80){
+						this.aLi[i].poy = 0
+						this.aLi[i].rotateX = 0
+						this.aLi[i].rotateY = i*(360/35)
+					}else if(i < 108){
+						this.aLi[i].poy = -oImg.height
+						this.aLi[i].rotateX = -35
+						this.aLi[i].rotateY = i*(360/28)
+					}else{
+						this.aLi[i].poy = -oImg.height*2
+						this.aLi[i].rotateX = -65
+						this.aLi[i].rotateY = i*(360/17)
+					}
+					this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
+					"translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,"+sphere_r+"px)";
+					
+					// this.aLi[i].pox = 0;
+					// this.aLi[i].poy = ~~(i%25/5)*200-600;
+					// this.aLi[i].poz = 1000;
+					// this.aLi[i].rotateY = 4.1*i*(360/125);//360/25
+					// this.aLi[i].rotateX = ~~(i%25/5)*36-80;//绕X轴转的度数
+					// this.aLi[i].style.transform = "rotateY("+this.aLi[i].rotateY+"deg) rotateX("+this.aLi[i].rotateX+"deg)"+
+					// "translate3D("+this.aLi[i].pox+"px,"+this.aLi[i].poy+"px,1000px)";
+				}
+			}
+			
+			document.addEventListener('mousewheel',function(event){
+				// console.log(magic.oUlZ)
+				if(magic.oUlZ < -3000){
+					magic.oUlZ = -2999
+					return
+				}else if(magic.oUlZ > 800){
+					magic.oUlZ = 799
+					return
+				}
+				if (!event) event = window.event;
+				var delta = 0;
+			
+				if (event.wheelDelta) {//IE、chrome浏览器使用的是wheelDelta，并且值为“正负120”
+					delta = event.wheelDelta/120; 
+					if (window.opera) delta = -delta;//因为IE、chrome等向下滚动是负值，FF是正值，为了处理一致性，在此取反处理
+				} else if (event.detail) {//FF浏览器使用的是detail,其值为“正负3”
+					delta = -event.detail/3;
+				}
+				magic.oUlZ -= delta*400;
+				magic.oUl.style.transform = "translate3D(0px,0px," + magic.oUlZ+ "px) rotateX("+magic.rotateX+ "deg) rotateY("+magic.rotateY+"deg)";
+			})//end of mousewheel
+			
+			document.onmousedown=function(event){
+				var rotate_deg = 25
+				if(current_mode === "Helix"){
+					rotate_deg = 5
+				}
+
+				if (!event) event = window.event;
+				var x = event.clientX,
+					y = event.clientY,
+					cutX = x,
+					cuty= y;
+				document.onmousemove = function(event){
+					if (!event) event = window.event;
+					cutX = event.clientX - x;
+					cutY = event.clientY - y;
+					magic.rotateX += -cutY*.02;
+					if(magic.rotateX > rotate_deg){
+						magic.rotateX -= -cutY*.02
+					}else if(magic.rotateX < -rotate_deg){
+						magic.rotateX -= -cutY*.02
+					}
+					magic.rotateY += cutX*.005;
+					magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+												"px) rotateX("+magic.rotateX+
+												"deg) rotateY("+magic.rotateY+"deg)";
+				}
+				document.onmouseup = function(){
+					document.onmousemove = null;
+				}	
+			}//end of document.onmousedown
+
+			document.ontouchstart = function(event){
+				var rotate_deg = 25
+				if(current_mode === "Helix"){
+					rotate_deg = 5
+				}
+				if (!event) event = window.event;
+				var x = event.changedTouches[0].clientX,
+					y = event.changedTouches[0].clientY,
+					cutX = x,
+					cuty= y;
+				document.ontouchmove = function(event){
+					if (!event) event = window.event;
+					cutX = event.changedTouches[0].clientX - x;
+					cutY = event.changedTouches[0].clientY - y;
+					magic.rotateX += -cutY*.02;
+					if(magic.rotateX > rotate_deg){
+						magic.rotateX -= -cutY*.02
+					}else if(magic.rotateX < -rotate_deg){
+						magic.rotateX -= -cutY*.02
+					}
+					magic.rotateY += cutX*.005;
+					magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+												"px) rotateX("+magic.rotateX+
+												"deg) rotateY("+magic.rotateY+"deg)";
+				}
+				document.ontouchend = function(){
+					document.ontouchmove = null
+				}
+			}
+
+			
+			var magic = new Magic();
+
+			magic.init();//创建li元素
+			magic.grid();//默认为grid模式
+
+			var gridBtn = document.getElementById('gridBtn'),
+				helixBtn = document.getElementById('helixBtn'),
+				SphereBtn = document.getElementById('SphereBtn');
+			
+			gridBtn.onclick = function(){
+				current_mode = "Grid"
+				magic.grid()
+				set_backface_visiable()
+			}
+			helixBtn.onclick = function(){
+				current_mode = "Helix"
+				magic.helix()
+				set_backface_unvisiablb()
+			}
+			SphereBtn.onclick = function(){
+				current_mode = "Sphere"
+				magic.sphere()
+				set_backface_visiable()
+			}
+			
+			magic.oUl.onmouseup = function(e){
+				
+				if(e){
+					// target_info
+					var target_info = e.target._my_info
+					console.log(target_info)
+					// alert_box show
+					alert_box.style.width = "80%"
+					alert_box.style.height = "80%"
+					alert_box.style.top = "10%"
+					alert_box.style.left = "10%"
+					alert_box.style.border = "1px solid #70caff"
+					// alert_box content
+					alert_box.innerHTML = `
+						<img src="${ e.target.style.backgroundImage.split('"')[1] }"/>
+						
+						<p>${ flyData[e.target.index].author }</P>
+						<p>${ flyData[e.target.index].time }</P>
+						<div id="btn">
+							<ul>
+								<li class="close" onclick="close_alert()">close</li>
+							</ul>
+						</div>
+					`
+				}
+			}
+			
+			// animate
+			rotate_scene()
+			function rotate_scene(){
+				// magic.oUlZ += 0.05
+				// magic.rotateX += 0.05
+				magic.rotateY += 0.05
+				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
+												"px) rotateX("+magic.rotateX+
+												"deg) rotateY("+magic.rotateY+"deg)";
+				ainimate_timer = requestAnimationFrame(rotate_scene)
+				//return timer
+			} 
+			
+			//全屏
+			function fullScreen(){
+				var el = document.documentElement;
+				var rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;      
+					if(typeof rfs != "undefined" && rfs) {
+						rfs.call(el);
+					};
+				return;
+			}
+			//退出全屏
+			function exitScreen(){
+				if (document.exitFullscreen) {  
+					document.exitFullscreen();  
+				}  
+				else if (document.mozCancelFullScreen) {  
+					document.mozCancelFullScreen();  
+				}  
+				else if (document.webkitCancelFullScreen) {  
+					document.webkitCancelFullScreen();  
+				}  
+				else if (document.msExitFullscreen) {  
+					document.msExitFullscreen();  
+				} 
+				if(typeof cfs != "undefined" && cfs) {
+					cfs.call(el);
+				}
+			}
+			
+			// function triggar(){
+			// 	if(is_rotate){
+			// 		cancelAnimationFrame(ainimate_timer)
+			// 		is_rotate = !is_rotate
+			// 	}else{
+			// 		rotate_scene()
+			// 		is_rotate = !is_rotate
+			// 	}
+			// }
+		
+			function set_backface_visiable(){
+				var list = document.querySelectorAll("#list li")
+				list.forEach(function(element){
+					element.style.backfaceVisibility = "visible"
+				})
+			}
+
+			function set_backface_unvisiablb(){
+				var list = document.querySelectorAll("#list li")
+				list.forEach(function(element){
+					element.style.backfaceVisibility = "hidden"
+				})
+			}
+		
+			function update(){
+				for(var i = 0;i < magic.aLi.length;i++){
+					magic.aLi[i].style.backgroundImage = `url(img/2.png)`
+				}
+			}
+
+			function back(){
+				for(var i = 0;i < magic.aLi.length;i++){
+					var index = Math.floor(Math.random() * img_list.length)
+					// var img_src = img_list[ index ]
+					magic.aLi[i].style.backgroundImage = `url('${img_list[index].src}')`
+				}
+			}
+
 		}
 	
 		// 适配 PC 大屏
-		(function(window, document) {
-			var hotcss = {};
+		// (function(window, document) {
+		// 	var hotcss = {};
 
-			(function() {
-				// 根据devicePixelRatio自定计算scale
-				var viewportEl = document.querySelector('meta[name="viewport"]')
-				var dpr = window.devicePixelRatio || 1
+		// 	(function() {
+		// 		// 根据devicePixelRatio自定计算scale
+		// 		var viewportEl = document.querySelector('meta[name="viewport"]')
+		// 		var dpr = window.devicePixelRatio || 1
 
-				// dpr = dpr >= 3 ? 3 : (dpr >= 2 ? 2 : 1)
+		// 		// dpr = dpr >= 3 ? 3 : (dpr >= 2 ? 2 : 1)
 
-				document.documentElement.setAttribute('data-dpr', dpr)
-				hotcss.dpr = dpr
+		// 		document.documentElement.setAttribute('data-dpr', dpr)
+		// 		hotcss.dpr = dpr
 
-				var scale = 1 / dpr
-				var content = 'width=device-width, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=no'
+		// 		var scale = 1 / dpr
+		// 		var content = 'width=device-width, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=no'
 
-				if (viewportEl) {
-				viewportEl.setAttribute('content', content)
-				} else {
-				viewportEl = document.createElement('meta')
-				viewportEl.setAttribute('name', 'viewport')
-				viewportEl.setAttribute('content', content)
-				document.head.appendChild(viewportEl)
-				}
-			})()
+		// 		if (viewportEl) {
+		// 		viewportEl.setAttribute('content', content)
+		// 		} else {
+		// 		viewportEl = document.createElement('meta')
+		// 		viewportEl.setAttribute('name', 'viewport')
+		// 		viewportEl.setAttribute('content', content)
+		// 		document.head.appendChild(viewportEl)
+		// 		}
+		// 	})()
 
-			window.hotcss = hotcss
-		})(window, document)
+		// 	window.hotcss = hotcss
+		// })(window, document)
 	
 	</script>
 </html>
