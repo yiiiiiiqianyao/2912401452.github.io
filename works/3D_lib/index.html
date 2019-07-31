@@ -43,7 +43,7 @@
 		var radius = document.getElementById("main").clientWidth
 		var screen_width = document.getElementById("main").clientWidth
 		var screen_height = document.getElementById("main").clientHeight
-		var update,back
+		var update,back,rotate_scene
 		// console.log(screen_width,screen_height)
 		var current_mode = 'Grid'	// Grid Helix Sphere
 		var img_list = [
@@ -347,15 +347,16 @@
 				}
 			}
 			// animate
-			rotate_scene()
-			function rotate_scene(){
+			
+			rotate_scene = function(){
 				
-				magic.rotateY += 0.05
+				magic.rotateY += 0.04
 				magic.oUl.style.transform = "translate3D(0px,0px,"+magic.oUlZ+
 												"px) rotateX("+magic.rotateX+
 												"deg) rotateY("+magic.rotateY+"deg)";
 				ainimate_timer = requestAnimationFrame(rotate_scene)
 			} 
+			rotate_scene()
 			
 			function set_backface_visiable(){
 				var list = document.querySelectorAll("#list li")
