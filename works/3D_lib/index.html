@@ -44,26 +44,35 @@
 		var screen_width = document.getElementById("main").clientWidth
 		var screen_height = document.getElementById("main").clientHeight
 		var update,back,rotate_scene
-		// console.log(screen_width,screen_height)
 		var current_mode = 'Grid'	// Grid Helix Sphere
 		var img_list = [
 			{
-				src:"img/1.jpg"
+				src:"img/1.jpg",
+				has_icon:true,
+				icon:"img/icon/1.png"
 			},
 			{
-				src:"img/2.png"
+				src:"img/2.png",
+				has_icon:false,
 			},
 			{
-				src:"img/3.jpg"
+				src:"img/3.jpg",
+				has_icon:true,
+				icon:"img/icon/2.png"
 			},
 			{
-				src:"img/4.jpg"
+				src:"img/4.jpg",
+				has_icon:false,
 			},
 			{
-				src:"img/5.png"
+				src:"img/5.png",
+				has_icon:true,
+				icon:"img/icon/3.png"
 			},
 			{
-				src:"img/6.png"
+				src:"img/6.png",
+				has_icon:true,
+				icon:"img/icon/4.png"
 			}
 		]
 		var is_rotate = true
@@ -120,12 +129,15 @@
 					
 					var index = Math.floor(Math.random() * img_list.length)
 					var img_src = img_list[ index ].src
-					oLi.style.backgroundImage = `url('${img_src}')`
+					oLi.style.backgroundImage = `url('${ img_src }')`
 					oLi.style.backgroundSize = "100% 100%"
-					
 					oLi._my_info = {
 						index:index
 					}
+					if(img_list[ index ].has_icon){
+						oLi.innerHTML = `<img style='position: absolute;top:0;left:5%;' src='${ img_list[ index ].icon }' />`
+					}
+
 					fragment.appendChild(oLi);
 				}
 				this.oUl.appendChild(fragment);//避免直接的DOM插入
@@ -432,35 +444,6 @@
 			bg.style.backgroundImage = `url(${ bg_imgs[bg_img_index] })`
 		}
 
-		// 适配 PC 大屏
-		// (function(window, document) {
-		// 	var hotcss = {};
-
-		// 	(function() {
-		// 		// 根据devicePixelRatio自定计算scale
-		// 		var viewportEl = document.querySelector('meta[name="viewport"]')
-		// 		var dpr = window.devicePixelRatio || 1
-
-		// 		// dpr = dpr >= 3 ? 3 : (dpr >= 2 ? 2 : 1)
-
-		// 		document.documentElement.setAttribute('data-dpr', dpr)
-		// 		hotcss.dpr = dpr
-
-		// 		var scale = 1 / dpr
-		// 		var content = 'width=device-width, initial-scale=' + scale + ', minimum-scale=' + scale + ', maximum-scale=' + scale + ', user-scalable=no'
-
-		// 		if (viewportEl) {
-		// 		viewportEl.setAttribute('content', content)
-		// 		} else {
-		// 		viewportEl = document.createElement('meta')
-		// 		viewportEl.setAttribute('name', 'viewport')
-		// 		viewportEl.setAttribute('content', content)
-		// 		document.head.appendChild(viewportEl)
-		// 		}
-		// 	})()
-
-		// 	window.hotcss = hotcss
-		// })(window, document)
 	
 	</script>
 </html>
