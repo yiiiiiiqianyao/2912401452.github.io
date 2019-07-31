@@ -7,12 +7,9 @@ body,html{
     height: 100%;
 }
 #all{
-    /* position: absolute; */
     position: relative;
     width: 400%;
     height: 100%;
-    /* left: 0;
-    top: 0; */
     transition: 1s;
 }
 #all.left{
@@ -25,9 +22,6 @@ body,html{
     height: 100%;
     background: #023b3b url("../img/bg.jpg") center center no-repeat;
     background-size: 100% 100%;
-    /* background-repeat:  */
-    /* background: #023b3b url("../img/bg.png") center center; */
-    /* background-color: #000000; */
     perspective: 800px;
 }
 
@@ -49,20 +43,16 @@ body,html{
     width: 100%;
     height: 100%;
     background-color: #ffffff;
-    margin:-1px;
-    border: 1px solid transparent;
-    overflow:hidden;
+    margin:-2px;
+    border: 2px solid transparent;
+    /* overflow:hidden; */
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
     text-align: center;
     color: #70caff;
     cursor: default;
     transition: 2s cubic-bezier(.94,.02,.49,.98);
     
-    /* transform:translateZ(0);
-    -webkit-transform:translateZ(0);
-    -moz-transform:translateZ(0);
-    -ms-transform:translateZ(0);
-    -o-transform:translateZ(0); */
+ 
 }
 
 
@@ -94,11 +84,7 @@ body,html{
     line-height: 30px;
 }
 #btn ul li:hover{
-     /*box-shadow: 0 0 5px rgba(127,255,255,0.75);
-     */
      box-shadow: 0 0 15px #007cc5;
-     /*background: rgba(17, 82, 221, 0.5);
-     */
      transform: translateY(-1px);
      -webkit-transform:translateY(-1px);
      -moz-transform:translateY(-1px);
@@ -113,19 +99,13 @@ body,html{
     left: 50%;
     width: 0;
     height: 0;
-    /* background: rgba(13, 101, 188,0.6); */
     background-color: #007dc57e;
-    /* border: 1px solid rgba(127,255,255,0.75); */
-    /* border: 1px solid #70caff; */
-    /* box-shadow: 0 0 12px rgba(127,255,255,0.75); */
     box-shadow: 0 0 15px #007cc5;
     color: #70caff;
     border-radius: 3px;
     opacity: 1;
     transition: 0.5s;
 }
-
-/* #alert_box{} */
 
 
 
