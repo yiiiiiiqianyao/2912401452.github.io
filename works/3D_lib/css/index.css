@@ -54,9 +54,9 @@ body,html{
     background-color: #007dc57e;
     
     /* border: 1px solid rgba(127,255,255,0.75); */
-    border: 1px solid #70caff;
+    /* border: 1px solid #70caff; */
     /* box-shadow: 0 0 12px rgba(127,255,255,0.75); */
-    box-shadow: 0 0 15px #007cc5;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
     text-align: center;
     /* color: #fff; */
     color: #70caff;
@@ -77,8 +77,8 @@ body,html{
     margin: 0 5px;
     height: 30px;
     line-height: 30px;
-    border: 1px solid rgba(127,255,255,1);
-    color: rgba(127,255,255,1);
+    border: 1px solid #007dc57e;
+    color: #007dc57e;
     padding: 0 10px;
     font-size: 12px;
     font-weight: bold;
@@ -94,7 +94,8 @@ body,html{
 }
 #btn ul li:hover{
      /*box-shadow: 0 0 5px rgba(127,255,255,0.75);
-     */box-shadow: 0 0 15px #007cc5;
+     */
+     box-shadow: 0 0 15px #007cc5;
      /*background: rgba(17, 82, 221, 0.5);
      */
      transform: translateY(-1px);

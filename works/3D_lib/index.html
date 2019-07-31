@@ -27,6 +27,7 @@
 						<li onclick="triggar()">trigger</li>
 						<li onclick="update()">update</li>
 						<li onclick="back()">back</li>
+						<li onclick="changeBg()">changeBg</li>
                     </ul>
                 </div>
             </div>
@@ -413,7 +414,23 @@
 					cfs.call(el);
 				}
 			}
-	
+		
+		// 改变背景图片
+		var bg_imgs = [
+			'img/bg.jpg',
+			'img/bg2.jpg',
+			'img/bg3.jpg',
+			'img/bg4.jpg',
+			'img/bg5.jpg'
+		]
+		var bg_img_index = 0
+		function changeBg(){
+			bg_img_index++
+			if(bg_img_index > bg_imgs.length - 1){bg_img_index = 0}
+			var bg = document.getElementById('main')
+			bg.style.backgroundImage = `url(${ bg_imgs[bg_img_index] })`
+		}
+
 		// 适配 PC 大屏
 		// (function(window, document) {
 		// 	var hotcss = {};
