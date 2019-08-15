@@ -1,4 +1,5 @@
 #header{
+    padding: 10px;
     border: 2px solid yellow;
     margin: 20px auto;
     width: 80%;
@@ -6,4 +7,9 @@
     h1{
         text-align: center;
     }
+    border-radius: 10px;;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
 }

@@ -1,10 +1,15 @@
 #content{
+    padding: 10px;
     width: 80%;
     margin: 20px auto;
-    height: 40%;
+    // height: 40%;
     border: 2px salmon solid;
     h1{
         text-align: center; 
     }
-  
+    border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
 }

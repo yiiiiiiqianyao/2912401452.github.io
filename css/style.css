@@ -2,14 +2,23 @@ html, body {
   height: 100%;
   width: 100%;
   margin: 0;
-  overflow: hidden;
+}
+
+html a, body a {
+  text-decoration: none;
 }
 
 #header {
+  padding: 10px;
   border: 2px solid yellow;
   margin: 20px auto;
   width: 80%;
   height: 20%;
+  border-radius: 10px;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  -ms-border-radius: 10px;
+  -o-border-radius: 10px;
 }
 
 #header h1 {
@@ -17,10 +26,15 @@ html, body {
 }
 
 #content {
+  padding: 10px;
   width: 80%;
   margin: 20px auto;
-  height: 40%;
   border: 2px salmon solid;
+  border-radius: 10px;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  -ms-border-radius: 10px;
+  -o-border-radius: 10px;
 }
 
 #content h1 {
@@ -28,10 +42,16 @@ html, body {
 }
 
 #footer {
+  padding: 10px;
   width: 80%;
   margin: 20px auto;
   border: 2px solid red;
   height: 20%;
+  border-radius: 10px;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  -ms-border-radius: 10px;
+  -o-border-radius: 10px;
 }
 
 #footer h2 {

@@ -1,0 +1,28 @@
+#btn_bar{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+#btn_bar .con_btn{
+    float: left;
+    margin: 10px;
+    border: 1px solid snow;
+    padding: 10px;
+    border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    -ms-border-radius: 5px;
+    -o-border-radius: 5px;
+    cursor: pointer;
+}
+#btn_bar .con_btn:hover{
+    transform: translateY(-1px);
+    -webkit-transform: translateY(-1px);
+    -moz-transform: translateY(-1px);
+    -ms-transform: translateY(-1px);
+    -o-transform: translateY(-1px);
+}
+#btn_bar .selected{
+    color: blue;
+    border: 1px solid blue;
+}
