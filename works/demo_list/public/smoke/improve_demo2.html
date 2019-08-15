@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+</head>
+<body>
+    
+</body>
+<script>
+    var scene, camera, renderer, clock, controlller, range = 100
+    var smokeParticles = [], delta, cloud
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
+        camera.position.z = range
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        
+        var axisHelper = new THREE.AxesHelper( range )
+        scene.add( axisHelper )
+
+        light = new THREE.DirectionalLight(0xffffff,0.5)
+        light.position.set(-1,0,1)
+        scene.add(light)
+
+        var loader = new THREE.TextureLoader()
+        loader.load('img/Smoke-Element.png',onLoad)
+        function onLoad( smokeTexture ){
+            console.log(111)
+            smokeMaterial = new THREE.PointsMaterial({
+                size:range*5,
+                color: 0x00dddd,
+                map: smokeTexture, 
+                transparent: true
+            })
+            smokeGeo = new THREE.Geometry(300,300)
+
+            for (p = 0; p < 100; p++) {
+                var particle = new THREE.Vector3(   Math.random()*range - range/2,
+                                                    Math.random()*range - range/2,
+                                                    Math.random()*range - range/2)
+                    particle.vX = (Math.random() - 0.5) / 3
+                    particle.vY = 0.05 + Math.random()*0.1
+                    smokeGeo.vertices.push(particle)
+            }
+            cloud = new THREE.Points(smokeGeo,smokeMaterial)
+            cloud.sortParticles = true
+            scene.add(cloud)
+        }
+        // ;
+        // smokeGeo = new THREE.PlaneGeometry(300,300);
+
+        // for (p = 0; p < 80; p++) {
+        //     var particle = new THREE.Mesh(smokeGeo,smokeMaterial);
+        //     particle.position.set(Math.random()*500-250,Math.random()*500-250,Math.random()*1000-100);
+        //     particle.rotation.z = Math.random() * 360;
+        //     scene.add(particle);
+        //     smokeParticles.push(particle);
+        // }
+
+        controlller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+
+    function animate(){
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        delta = clock.getDelta()
+        // evolveSmoke()
+        controlller.update()
+    }
+
+    function evolveSmoke() {
+        var sp = smokeParticles.length;
+        while(sp--) {
+            smokeParticles[sp].rotation.z += (delta * 0.2);
+        }
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+</script>
+</html>

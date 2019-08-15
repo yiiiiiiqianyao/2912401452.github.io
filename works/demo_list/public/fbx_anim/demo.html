@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+        }
+        #info a {
+            color: #046;
+            font-weight: bold;
+        }
+    </style>
+    <script src="three.js"></script>
+    <script src="inflate.min.js"></script>
+    <!-- 解析解析二进制文件 -->
+    <script src="FBXLoader.js"></script>
+    <!-- 加载fbx模型 -->
+    <script src="OrbitControls.js"></script>
+    <script src="WebGL.js"></script>
+    <script src="stats.min.js"></script>
+</head>
+<body>
+    <div id="info"></div>
+</body>
+<script>
+    if ( WEBGL.isWebGLAvailable() === false ) { document.body.appendChild( WEBGL.getWebGLErrorMessage() );}
+    // - Define Property - 
+    var container, stats, controls;     // 容器、性能控制器、gui控制器
+    var camera, scene, renderer, light; // 相机、场景、渲染器、光照
+    var clock = new THREE.Clock();      // 时钟
+    var mixer;                          // 
+    // - Run - 
+    init()
+    // - Funcations -
+    function init(){
+        container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+        camera.position.set( 100, 200, 300 );
+
+        controls = new THREE.OrbitControls( camera );
+        // "target" sets the location of focus, where the object orbits around
+        controls.target.set( 0, 100, 0 );
+        controls.update();
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xa0a0a0 );
+        scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+        // - Add Light -
+        light = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+        light.position.set( 0, 200, 0 );
+        scene.add( light );
+
+        light = new THREE.DirectionalLight( 0xffffff );
+        light.position.set( 0, 200, 100 );
+        light.castShadow = true;
+        light.shadow.camera.top = 180;
+        light.shadow.camera.bottom = - 100;
+        light.shadow.camera.left = - 120;
+        light.shadow.camera.right = 120;
+        scene.add( light );
+
+        // - Ground -
+        var mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+        mesh.rotation.x = - Math.PI / 2;
+        mesh.receiveShadow = true;
+        scene.add( mesh );
+
+        var grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add( grid ); 
+
+        // - Load Model -
+        var loader = new THREE.FBXLoader(); // fbx 加载器
+        loader.load( 'models/Samba Dancing.fbx', function ( object ) {
+            mixer = new THREE.AnimationMixer( object ); // 创建一个fbx骨骼动画模型的动画播放器
+            // AnimationMixer是场景中特定对象的动画播放器
+            // 当场景中的多个对象独立动画时，可以为每个对象使用一个AnimationMixer
+            var action = mixer.clipAction( object.animations[ 0 ] );
+            //mixer.clipAction 返回一个可以控制动画的AnimationAction对象  参数需要一个AnimationClip 对象
+            action.play(); // 开启动画
+            object.traverse( function ( child ) { // 对加载的所有网格执行动作( 允许投射阴影和接受阴影 )
+                if ( child.isMesh ) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            } );
+            scene.add( object ); // 添加模型到场景中
+        } );
+
+        // - Render -
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMap.enabled = true;
+        container.appendChild( renderer.domElement );
+
+        // - Add Event Listener -
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        // - stats -
+        stats = new Stats();
+        container.appendChild( stats.dom );
+        animate()
+    }
+
+    function animate(){
+        requestAnimationFrame( animate );
+        var delta = clock.getDelta();
+        if ( mixer ) mixer.update( delta );
+        renderer.render( scene, camera );
+        stats.update();
+    }
+    
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+
+</script>
+</html>

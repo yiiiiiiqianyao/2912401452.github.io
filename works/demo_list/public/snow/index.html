@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="WebGL-output"></div>
+</body>
+    <script>
+        window.onload = function() {
+            var cloud;
+            var range = 50
+            let scene = new THREE.Scene()
+            let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.x = 10
+            camera.position.y = 10
+            camera.position.z = 10
+            camera.lookAt(scene.position)
+            let renderer = new THREE.WebGLRenderer({
+                antialias:true, // 开启抗锯齿处理
+                alpha:true
+            })
+            renderer.setClearColor(new THREE.Color(0x000000))
+            renderer.setSize(window.innerWidth,window.innerHeight)
+            renderer.shadowMap.enabled = true
+
+            // var dir = new THREE.Vector3( 1, 0, 0 );
+            // var origin = new THREE.Vector3( 0, 0, 0 );
+            // var length = 1;
+            // var hex = 0xffff00;
+            // var arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
+            // scene.add( arrowHelper );
+            var axisHelper = new THREE.AxesHelper( 5 );
+            scene.add( axisHelper );
+
+            var controller = new THREE.OrbitControls(camera,renderer.domElement)
+            controller.maxDistance = 20
+            // controller.enableDamping = true
+            controller.enablePan = false
+
+            var loader = new THREE.TextureLoader()
+            loader.load('Snow.png',onLoad,onProgress,onError)
+            function onLoad( texture  ){
+                var mat = new THREE.PointsMaterial({
+                    size:1,
+                    transparent:true,
+                    opacity:true,
+                    map:texture,
+                    blending:THREE.AdditiveBlending,
+                    sizeAttenuation:true,
+                    color:0xffffff
+                })
+                var geom = new THREE.Geometry()
+                
+                for(var i = 0; i < 1000;i ++) {
+                    var particle = new THREE.Vector3(Math.random()*range - range/2,
+                                                     Math.random()*range - range/2,
+                                                     Math.random()*range - range/2)
+                    particle.vX = (Math.random() - 0.5) / 3
+                    particle.vY = 0.05 + Math.random()*0.1
+                    geom.vertices.push(particle)
+                }
+                cloud = new THREE.Points(geom,mat)
+                cloud.sortParticles = true
+                scene.add(cloud)
+                
+            }
+            function onProgress(){}
+            function onError(){}
+            document.getElementById('WebGL-output').appendChild(renderer.domElement)
+            renderScene()
+            function renderScene(){
+                controller.update()
+                snowanimate()
+                renderer.render(scene,camera)
+                requestAnimationFrame(renderScene)
+            }
+            function snowanimate(){
+                try{
+                   
+                    var vertices = cloud.geometry.vertices
+                    vertices.forEach(function(v) {
+                        v.x -= v.vX
+                        v.y -= v.vY
+                        if(v.x <= -range/2 || v.x >= range/2) v.vX *= -1
+                        if(v.y <= -range/2) v.y = range/2
+                        cloud.geometry.verticesNeedUpdate = true
+                    })
+                }catch(e){}
+            }
+            window.onresize = onResize
+            function onResize(){
+                camera.aspect = window.innerWidth / window.innerHeight
+                camera.updateProjectionMatrix()
+                renderer.setSize(window.innerWidth,window.innerHeight)
+            }
+        }
+    </script>
+</html>

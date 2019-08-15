@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../src/three.js"></script>
+    <style>
+        body {
+				color: #ffffff;
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+<script>
+    var renderer, scene, camera
+    var pointclouds                     // 点云
+    var raycaster                       // 射线
+    var mouse = new THREE.Vector2()     // 记录鼠标的坐标
+    var intersection = null             // 射线相交的信息对象
+    var spheres = []                    // 表示鼠标轨迹的小球数组
+    var spheresIndex = 0
+    var clock
+    var threshold = 0.1
+    var pointSize = 0.05                // 波浪面顶点尺寸( 小型的矩形 )
+    var width = 80                      // 几何体的宽度分段数量
+    var length = 160                    // 几何体的长度分段数量
+    var rotateY = new THREE.Matrix4().makeRotationY( 0.005 ) // 变换矩阵
+    // 
+    init()
+    animate()
+    // - Functions -
+    function init(){
+        var container = document.getElementById( 'container' );
+        scene = new THREE.Scene();
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+        camera.position.set( 10, 10, 10 );
+        camera.lookAt( scene.position );
+        camera.updateMatrix();  // --------------
+        // 
+        var pcBuffer = generatePointcloud( new THREE.Color( 1, 0, 0 ), width, length );
+        pcBuffer.scale.set( 5, 10, 10 );
+        pcBuffer.position.set( - 5, 0, 0 );
+        scene.add( pcBuffer );
+
+        var pcIndexed = generateIndexedPointcloud( new THREE.Color( 0, 1, 0 ), width, length );
+        pcIndexed.scale.set( 5, 10, 10 );
+        pcIndexed.position.set( 0, 0, 0 );
+        scene.add( pcIndexed );
+
+        var pcIndexedOffset = generateIndexedWithOffsetPointcloud( new THREE.Color( 0, 1, 1 ), width, length );
+        pcIndexedOffset.scale.set( 5, 10, 10 );
+        pcIndexedOffset.position.set( 5, 0, 0 );
+        scene.add( pcIndexedOffset );
+
+        pointclouds = [ pcBuffer, pcIndexed, pcIndexedOffset ]  // 点云
+        // 
+        var sphereGeometry = new THREE.SphereBufferGeometry( 0.1, 32, 32 );
+        var sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+        for ( var i = 0; i < 40; i ++ ) {
+            var sphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
+            scene.add( sphere );
+            spheres.push( sphere );
+        }
+        //
+        raycaster = new THREE.Raycaster();
+		raycaster.params.Points.threshold = threshold;
+        // 
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        container.appendChild( renderer.domElement );
+        // 
+        window.addEventListener( 'resize', onWindowResize, false );
+		document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+    
+    function generatePointCloudGeometry( color, width, length ) {
+        var geometry = new THREE.BufferGeometry();          // 一个缓存的几何体对象
+        var numPoints = width * length;                     // 几何体的顶点数量
+        var positions = new Float32Array( numPoints * 3 );  // 用于保存几何体顶点的位置信息
+        var colors = new Float32Array( numPoints * 3 );     // 用于保存几何体顶点的颜色信息
+        var k = 0;  // 表示几何体的位置信息数组顶点的编号
+        for ( var i = 0; i < width; i ++ ) {
+            for ( var j = 0; j < length; j ++ ) {           // 为几何体的每一个顶点赋予坐标和颜色信息
+                var u = i / width;
+                var v = j / length;
+                var x = u - 0.5;
+                var y = ( Math.cos( u * Math.PI * 4 ) + Math.sin( v * Math.PI * 8 ) ) / 20; // 顶点的 Y 轴坐标与 X,Z 的坐标都有关
+                var z = v - 0.5;
+                positions[ 3 * k ] = x;
+                positions[ 3 * k + 1 ] = y;
+                positions[ 3 * k + 2 ] = z;
+                var intensity = ( y + 0.1 ) * 10;    // 用于控制不同顶点的颜色亮度 Y 的值越是大 顶点的颜色就越亮
+                colors[ 3 * k ] = color.r * intensity;
+                colors[ 3 * k + 1 ] = color.g * intensity;
+                colors[ 3 * k + 2 ] = color.b * intensity;
+                k ++;
+            }
+        }
+        geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+        geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+        geometry.computeBoundingBox();  // -----------------
+        return geometry;
+    }
+
+    function generatePointcloud( color, width, length ) {
+        var geometry = generatePointCloudGeometry( color, width, length );
+        var material = new THREE.PointsMaterial( { 
+            size: pointSize, 
+            vertexColors: THREE.VertexColors 
+        } );
+        return  new THREE.Points( geometry, material );
+    }
+
+    function generateIndexedPointcloud( color, width, length ) {
+        // var geometry = generatePointCloudGeometry( color, width, length );
+        // var numPoints = width * length;
+        // var indices = new Uint16Array( numPoints );
+        // var k = 0;
+        // for ( var i = 0; i < width; i ++ ) {
+        //     for ( var j = 0; j < length; j ++ ) {
+        //         indices[ k ] = k;
+        //         k ++;
+        //     }
+        // }
+        // geometry.setIndex( new THREE.BufferAttribute( indices, 1 ) );
+        // var material = new THREE.PointsMaterial( { size: pointSize, vertexColors: THREE.VertexColors } );
+        // return new THREE.Points( geometry, material );
+        return generatePointcloud( color, width, length )
+    }
+
+    function generateIndexedWithOffsetPointcloud( color, width, length ) {
+        // var geometry = generatePointCloudGeometry( color, width, length );
+        // var numPoints = width * length;
+        // var indices = new Uint16Array( numPoints );
+        // var k = 0;
+        // for ( var i = 0; i < width; i ++ ) {
+        //     for ( var j = 0; j < length; j ++ ) {
+        //         indices[ k ] = k;
+        //         k ++;
+        //     }
+        // }
+        // geometry.setIndex( new THREE.BufferAttribute( indices, 1 ) );
+        // geometry.addGroup( 0, indices.length );
+        // var material = new THREE.PointsMaterial( { size: pointSize, vertexColors: THREE.VertexColors } );
+        // return new THREE.Points( geometry, material );
+        return generatePointcloud( color, width, length )
+    }
+
+    function onDocumentMouseMove(event){
+        event.preventDefault();
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+		mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    }
+
+    function animate() {
+        requestAnimationFrame( animate );
+        render();
+        // stats.update();
+    }
+
+    var toggle = 0;
+    function render() {
+        camera.applyMatrix( rotateY );              // 相机矩阵乘以新矩阵
+        camera.updateMatrixWorld();                 // 更新相机的世界坐标系
+        raycaster.setFromCamera( mouse, camera );   // 更新射线 ( 鼠标位置为终点 相机位置为起点 )
+        var intersections = raycaster.intersectObjects( pointclouds );
+        intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
+        if ( toggle > 0.02 && intersection !== null ) {
+            spheres[ spheresIndex ].position.copy( intersection.point );    // 在小球列表中根据序号将其中的一个小球放置到当前鼠标选中的顶点坐标位置
+            spheres[ spheresIndex ].scale.set( 1, 1, 1 );                   // 当前提取的小球设置初始大小
+            spheresIndex = ( spheresIndex + 1 ) % spheres.length;           // 更改序号
+            toggle = 0;
+        }
+        // 每一次 render 的时候对小球列表中的每一个小球 X 0.98 的 scale
+        for ( var i = 0; i < spheres.length; i ++ ) {
+            var sphere = spheres[ i ];
+            sphere.scale.multiplyScalar( 0.98 );
+            sphere.scale.clampScalar( 0.01, 1 );
+        }
+        toggle += clock.getDelta();
+        renderer.render( scene, camera );
+    }
+
+</script>
+</body>
+</html>

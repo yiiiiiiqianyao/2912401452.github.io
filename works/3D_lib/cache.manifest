@@ -6,16 +6,19 @@ CACHE:
 index.html
 css/index.css
 js/data.js
+
 bg.jpg
 bg1.jpg
 bg2.jpg
 bg3.jpg
 bg4.jpg
 bg5.jpg
+
 1.png
 2.png
 3.png
 4.png
+
 NETWORK:
 
 FALLBACK:
