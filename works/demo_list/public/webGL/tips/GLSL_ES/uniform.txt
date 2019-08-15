@@ -1,0 +1,10 @@
+
+使用步骤：
+    1、在着色器中定义 uniform 变量 ( 片元 )
+        uniform vec4 u_FragColor;
+    2、在 js 代码中获取 uniform 变量的地址
+        var u_FragColor = gl.getUniformLocation( gl.program, "u_FragColor" )
+    3、在 js 中向对应的 uniform 变量传递值
+        gl.uniform4f( u_FragColor, 0.0, 1.0, 0.0, 1.0 )
+    4、在着色器中使用 uniform 变量
+        gl_FragColor = u_FragColor;

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <style>
+        html,body{
+            width: 100%;height: 100%;
+        }
+        #container{
+            width: 100%;height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+</body>
+
+        <!-- 
+            gl_Position = vec4(position,1.0); 
+            modelMatrix         模型矩阵
+            viewMatrix          视图矩阵(相机对象的世界矩阵逆矩阵)
+            projectionMatrix    投影矩阵(相机对象的投影矩阵)
+        -->
+<script id="vertexShader" type="x-shader/x-vertex">
+    void main(){
+        gl_PointSize = 20.0;
+        gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.0);
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+    uniform vec3 color;
+    void main(){
+        // gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+        gl_FragColor = vec4(color,1.0);
+    }
+</script>
+<script>
+    window.onload = function(){
+        let container = document.getElementById("container")
+        let scene,camera,renderer,controller,mixer
+        let plane,material
+        init()
+        function init(){
+            scene = new THREE.Scene()
+            camera = new THREE.PerspectiveCamera(70, container.clientWidth/container.clientHeight, 0.01, 1000)
+            camera.position.set(1,1,1)
+            camera.lookAt(scene.position)
+            renderer = new THREE.WebGLRenderer({antialias: true})
+            // renderer.setClearColor(0xEEEEEE)
+            renderer.setSize(container.clientWidth, container.clientHeight)
+            controller = new THREE.OrbitControls(camera, renderer.domElement)
+            container.appendChild(renderer.domElement)
+            var axesHelper = new THREE.AxesHelper( 20 )
+            scene.add( axesHelper )
+
+            var geometry = new THREE.BufferGeometry()
+            var planeGeometry = new THREE.PlaneBufferGeometry(0.4,0.2)
+            // var cubeGeometry = new THREE.CubeGeomere
+            var vertices = new Float32Array([
+                0.6,0.2,0.0,
+                0.7,0.6,0.0,
+                0.8,0.2,0.0,
+                -0.6,-0.2,0.0,
+                -0.7,-0.6,0.0,
+                -0.8,-0.2,0.0
+            ])
+            var attrubute = new THREE.BufferAttribute(vertices,3)
+            geometry.addAttribute("position",attrubute)
+            material = new THREE.ShaderMaterial({
+                vertexShader:document.getElementById("vertexShader").textContent,
+                fragmentShader:document.getElementById("fragmentShader").textContent,
+                side:THREE.DoubleSide,
+                uniforms:{
+                    color:{value:new THREE.Color(0xfff000)}
+                }
+            })
+            // var point = new THREE.Points(geometry,material)
+            // scene.add(point)
+            var line = new THREE.Line(geometry,material)
+            scene.add(line)
+            plane = new THREE.Mesh(planeGeometry,material)
+            plane.rotateY(Math.PI/4)
+            plane.rotation.x = 0.5
+            scene.add(plane)
+            
+            console.log(plane.rotation.x)
+            animate()
+        }
+        function animate(){
+            // console.log(plane.rotation.x)
+            renderer.render(scene,camera)
+            controller.update()
+            // material.needsUpdate = true
+            plane.rotateY(0.1)
+            // plane.rotetion.x =plane.rotetion.x + 0.01
+            requestAnimationFrame(animate)
+        }
+    }
+</script>
+</html>

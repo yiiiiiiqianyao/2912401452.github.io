@@ -1,0 +1,21 @@
+提供一些webGL的封装方法
+1、initShaders( gl, vshader, fshader ) 在 WebGL 系统内部建立和初始化着色器
+    gl          指定的渲染上下文
+    vshader     指定的顶点着色器程序代码
+    fshader     指定的片元着色器程序代码
+
+    reutrn      true/false 成功/失败
+
+    var program = createProgram(gl, vshader, fshader)
+    gl.useProgram(program)
+    gl.program = program
+2、createProgram(gl, vshader, fshader) 创建 program 对象，并绑定，链接着色器对象
+    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader)
+    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader)
+3、loadShader(gl, type, source) 返回着色器对象
+4、getWebGLContext( cancas [, debug] ) 获取一个 webgl 上下文的对象
+    canvas: 指定的canvas元素
+    debug: Boolean 可选, 若为true, 则会在控制台输出错误信息( 会影响性能 ) 
+
+    reutrn:null/WebGL上下文不可用 non-null/WebGL绘图上下文
+    WebGLUtils.setupWebGL - webgl- util.js

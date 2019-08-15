@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <style>
+        html,body{
+            width: 100%;height: 100%;
+        }
+        #container{
+            width: 100%;height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+</body>
+
+        <!-- 
+            gl_Position = vec4(position,1.0); 
+            modelMatrix         模型矩阵
+            viewMatrix          视图矩阵(相机对象的世界矩阵逆矩阵)
+            projectionMatrix    投影矩阵(相机对象的投影矩阵)
+        -->
+<script id="vertexShader" type="x-shader/x-vertex">
+    varying vec3 v_normal;
+    void main(){
+        // attribute vec3 normal 定点法向量变量 系统自动声明
+        // uniform mat3 normalMatrix 法向量矩阵系统 系统自动声明
+        // 顶点的法向量执行插值计算
+        v_normal = normalMatrix*normal;
+        gl_PointSize = 20.0;
+        gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.0);
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+
+    uniform vec3 color;
+    // 顶点法向量的插值结果
+    varying vec3 v_normal;
+    uniform vec3 u_lightColor;
+    uniform vec3 u_lightDirection;
+    void main(){
+        // 法向量的归一化
+        vec3 normal2 = normalize(v_normal);
+        // 计算片元法向量方向与光线方向的点积( 计算光线的入射角度,向量长度都为1 )
+        float dot = dot(u_lightDirection,normal2);
+        // 计算反射光的颜色
+        vec3 reflectedLight = u_lightColor*color*dot;
+        // 变量赋值
+        gl_FragColor = vec4(reflectedLight,1.0);
+        //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+        // gl_FragColor = vec4(color,1.0);
+    }
+</script>
+<script>
+    window.onload = function(){
+        let container = document.getElementById("container")
+        let scene,camera,renderer,controller,mixer
+        let plane,material
+        init()
+        function init(){
+            scene = new THREE.Scene()
+            camera = new THREE.PerspectiveCamera(70, container.clientWidth/container.clientHeight, 0.01, 1000)
+            camera.position.set(5,5,5)
+            camera.lookAt(scene.position)
+            renderer = new THREE.WebGLRenderer({antialias: true})
+            renderer.setSize(container.clientWidth, container.clientHeight)
+            controller = new THREE.OrbitControls(camera, renderer.domElement)
+            container.appendChild(renderer.domElement)
+            var axesHelper = new THREE.AxesHelper( 20 )
+            scene.add( axesHelper )
+
+            material = new THREE.ShaderMaterial({
+                uniforms:{
+                    color:{ value:new THREE.Color(0xff0000) },
+                    u_lightColor:{ value:new THREE.Color(0xffffff) },
+                    u_lightDirection:{ value:new THREE.Vector3(1.0,1.0,1.0).normalize() }
+                },
+                vertexShader:document.getElementById("vertexShader").textContent,
+                fragmentShader:document.getElementById("fragmentShader").textContent
+            })
+
+            // material = new THREE.ShaderMaterial({
+            //     uniforms:THREE.UniformsUtils.merge([
+            //         THREE.UniformsLib["lights"],
+            //         {
+            //             color:{
+            //                 value:new THREE.Color(0xff0000)
+            //             }
+            //         }
+            //     ]),
+            //     vertexShader:document.getElementById("vertexShader").textContent,
+            //     fragmentShader:document.getElementById("fragmentShader").textContent
+            // })
+
+            // add lights 
+            // scene.add(new THREE.A)
+            
+            var cube = new THREE.BoxBufferGeometry(1,2,3)
+            scene.add(new THREE.Mesh(cube,material))
+            animate()
+        }
+        function animate(){
+            renderer.render(scene,camera)
+            controller.update()
+            requestAnimationFrame(animate)
+        }
+    }
+</script>
+</html>

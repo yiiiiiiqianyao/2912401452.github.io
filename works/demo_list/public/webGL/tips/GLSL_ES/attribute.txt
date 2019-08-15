@@ -1,0 +1,11 @@
+attribute 变量是一种GLSL ES 变量，被用来从外部向顶点着色器内部传输数据，只有顶点着色器可以使用
+attribute 关键词被称为存储限定符
+使用步骤：
+    1、在顶点着色器代码中声明 attribute 变量
+        attribute vec4 a_Position
+    2、在 js 代码中获取对应的 attribute 变量的地址
+        var a_Position = gl.getAttribLocation( gl.program, "a_Position" )
+    3、在 js 代码中向对应的 attribute 变量传递数据
+        gl.vertexAttrib3f( a_Position, 0.0, 0.0, 0.0 )
+    4、在顶点着色器中使用
+        gl_Position = a_Position;

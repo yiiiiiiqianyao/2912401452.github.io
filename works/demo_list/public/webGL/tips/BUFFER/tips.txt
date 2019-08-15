@@ -1,0 +1,15 @@
+缓冲区对象是 WebGL 系统中的一内存区域，可以一次性的向其中传递大量的数据供着色器使用
+使用步骤：
+    1、创建缓冲区对象
+        var vertexBuffer = gl.createBuffer()
+    2、绑定缓冲区对象
+        gl.bindBuffer( gl.ARRAY_BUFFER, vertexBuffer )
+    3、写入缓冲区数据
+        var vertices = new Float32([
+            0.0, 0.0, -0.5,-0.5,0.5, -0.5
+        ])
+        gl.bufferData( gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW )
+    4、分配缓冲区对象
+        gl.vertexAttribPointer( a_Position, 2, gl.FLOAT, false, 0, 0 )
+    5、开启缓冲区对象
+        gl.enableVertexAttribArray( a_Position )

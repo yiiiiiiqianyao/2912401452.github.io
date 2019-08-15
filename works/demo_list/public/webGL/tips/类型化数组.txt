@@ -1,0 +1,6 @@
+Functions:
+    get( index )        获取第 index 个元素值
+    set( index, value ) 设置第 index 个元素的值为 value
+    set( array, offset )从第 offset 个元素开始将数组 array 中的值填充进去
+    length              数组的长度
+    BYTES_PER_ELEMENT   数组中每个元素所占的字节数

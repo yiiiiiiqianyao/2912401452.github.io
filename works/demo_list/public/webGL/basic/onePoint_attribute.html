@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        #can{
+            display: block;
+            margin: 50px auto;
+        }
+    </style>
+    <script src="../src/js/webGL/webgl-debug.js"></script>
+    <script src="../src/js/webGL/webgl-utils.js"></script>
+    <script src="../src/js/webGL/cuon-utils.js"></script>
+    <title>Document</title>
+
+</head>
+<body onload="start()">
+    <canvas id="can" width="1200px" height="800px">
+        Your broswer not support
+    </canvas>
+    <script>
+        function start(){
+            let canvas = document.getElementById('can')
+            let gl = getWebGLContext(canvas)    // 由cuon-utils.js提供
+            if(!gl){
+                console.log('Failed to get the rendering context for WebGL')
+                return
+            }
+            // 设置着色器代码
+            let VSHADER_SOURCE = getVSHADER()
+            let FSHADER_SOURCE = getFSHADER()
+
+            // 初始化着色器
+            if(!initShaders(gl,VSHADER_SOURCE,FSHADER_SOURCE)){
+                console.log('Failed to initialize shaders')
+                return
+            }
+            // 获取attribute变量在顶点着色器中的存储位置 由于gl.program着色器对象属性是在initShaders中创建的，所以需要在它之后调用
+            let a_Position = gl.getAttribLocation(gl.program,'a_Position')
+            if(a_Position < 0){
+                console.log('Failed to get the storage location of a_Position')
+                return
+            }
+            let a_PointSize = gl.getAttribLocation(gl.program,'a_PointSize')
+            if(a_PointSize < 0){
+                console.log('Failed to get the storage location of a_PointSize')
+                return
+            }
+            //将顶点位置传输给attribute变量 ...1f,2f,3f,4f 同族函数
+            gl.vertexAttrib3f(a_Position,0.0,0.0,0.0)
+            gl.vertexAttrib1f(a_PointSize,50.0)
+
+            gl.clearColor(0.0,0.0,0.0,1.0)
+            gl.clear(gl.COLOR_BUFFER_BIT)
+
+            gl.drawArrays(gl.POINTS,0,1)
+        }// 启动方法
+
+
+        function getVSHADER(){
+            return `
+                attribute vec4 a_Position;\n
+                attribute float a_PointSize;\n
+                void main(){\n
+                    gl_Position = a_Position;\n
+                    gl_PointSize = a_PointSize;\n
+                }\n
+            `
+        }
+        function getFSHADER(){
+            return `
+                void main(){\n
+                    gl_FragColor = vec4(1.0,0.0,0.0,1.0);\n
+                }\n
+            `
+        }
+    </script>
+</body>
+</html>
