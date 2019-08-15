@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+        #blocker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        #instructions {
+            width: 100%;
+            height: 100%;
+            display: -webkit-box;
+            display: -moz-box;
+            display: box;
+            -webkit-box-orient: horizontal;
+            -moz-box-orient: horizontal;
+            box-orient: horizontal;
+            -webkit-box-pack: center;
+            -moz-box-pack: center;
+            box-pack: center;
+            -webkit-box-align: center;
+            -moz-box-align: center;
+            box-align: center;
+            color: #ffffff;
+            text-align: center;
+            cursor: pointer;
+        }
+    </style>
+    <script src="../src/three.js"></script>
+    <!-- <script src="../src/OrbitControls.js"></script> -->
+    <script src="../src/PointerLockControls.js"></script>
+    <script src="../src/loaders/MTLLoader.js"></script>
+    <script src="../src/loaders/OBJLoader.js"></script>
+    <script src="../src/libs/chroma.js"></script>
+</head>
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            <span style="font-size:40px">点击屏幕开始</span>
+            <br />
+            <br />
+            (W, A, S, D = 移动, SPACE = 跳跃, MOUSE = 移动视角)
+        </div>
+    </div>
+</body>
+<script>
+    var scene, camera, renderer, clock, controls
+    var blocker = document.getElementById("blocker")
+    var instructions = document.getElementById("instructions")
+    // move values
+    var controlsEnabled = false;
+    var moveForward = false;
+    var moveBackward = false;
+    var moveLeft = false;
+    var moveRight = false;
+    var canJump = false;
+    var spaceUp = true; //处理一直按着空格连续跳的问题
+    //      声明射线
+    //      Raycaster( origin : Vector3, direction : Vector3, near : Float, far : Float ) {
+    //      origin —— 光线投射的原点向量。
+    //      direction —— 向射线提供方向的方向向量，应当被标准化。
+    //      near —— 返回的所有结果比near远。near不能为负值，其默认值为0。
+    //      far —— 返回的所有结果都比far近。far不能小于near，其默认值为Infinity（正无穷。）
+    var upRaycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3( 0, 1, 0), 0, 10);
+    var horizontalRaycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 10);
+    var downRaycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3( 0, -1, 0), 0, 10);
+
+    var velocity = new THREE.Vector3();     // 移动速度变量
+    var direction = new THREE.Vector3();    // 移动的方向变量
+    var rotation = new THREE.Vector3();     // 当前的相机朝向
+
+    var speed = 500; //控制器移动速度
+    var upSpeed = 200; //控制跳起时的速度
+
+    //辅助箭头
+    var up,horizontal,down,group;
+
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+        camera.position.z = 10
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        // renderer.setClearColor(new THREE.Color(0x000000))
+        renderer.setPixelRatio( window.devicePixelRatio )
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        renderer.sortObjects = false
+
+        var axisHelper = new THREE.AxesHelper( 10 )
+        scene.add( axisHelper )
+
+        // add lights
+        scene.add(new THREE.AmbientLight(0x444444))
+        light = new THREE.PointLight(0xffffff)
+        light.position.set(0,50,0)
+        //告诉平行光需要开启阴影投射
+        light.castShadow = true
+        scene.add(light);
+
+        // load models
+        var mtlLoader = new THREE.MTLLoader();
+        mtlLoader.setPath('city/');
+        //加载mtl文件
+        mtlLoader.load('city.mtl', function (material) {
+            var objLoader = new THREE.OBJLoader();
+            //设置当前加载的纹理
+            objLoader.setMaterials(material);
+            objLoader.setPath('city/');
+            objLoader.load('city.obj', function (object) {
+                //设置颜色的取值范围
+                var scale = chroma.scale(['yellow', '008ae5']);
+
+                //重新设置纹理颜色
+                setRandomColors(object, scale);
+
+                object.scale.set(5, 5, 5);
+                //将模型缩放并添加到场景当中
+                scene.add(object);
+            })
+        });
+
+        //添加辅助线
+        group = new THREE.Group();
+        up = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 10, 0x00ff00);
+        horizontal = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 10, 0x00ffff);
+        down = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(), 10, 0xffff00);
+
+        group.add(up);
+        group.add(horizontal);
+        group.add(down);
+
+        scene.add(group);
+
+        // init control
+        initPointerLock()
+
+        controls = new THREE.PointerLockControls( camera );
+        controls.getObject().position.y = 50;
+        controls.getObject().position.x = 100;
+        scene.add( controls.getObject() );
+        var onKeyDown = function ( event ) {
+            switch ( event.keyCode ) {
+                case 38: // up
+                case 87: // w
+                    moveForward = true;
+                    break;
+                case 37: // left
+                case 65: // a
+                    moveLeft = true; break;
+                case 40: // down
+                case 83: // s
+                    moveBackward = true;
+                    break;
+                case 39: // right
+                case 68: // d
+                    moveRight = true;
+                    break;
+                case 32: // space
+                    if ( canJump && spaceUp ) velocity.y += upSpeed;
+                    canJump = false;
+                    spaceUp = false;
+                    break;
+            }
+        };
+        var onKeyUp = function ( event ) {
+            switch( event.keyCode ) {
+                case 38: // up
+                case 87: // w
+                    moveForward = false;
+                    break;
+                case 37: // left
+                case 65: // a
+                    moveLeft = false;
+                    break;
+                case 40: // down
+                case 83: // s
+                    moveBackward = false;
+                    break;
+                case 39: // right
+                case 68: // d
+                    moveRight = false;
+                    break;
+                case 32: // space
+                    spaceUp = true;
+                    break;
+            }
+        };
+        document.addEventListener( 'keydown', onKeyDown, false );
+        document.addEventListener( 'keyup', onKeyUp, false );
+
+
+        // controlller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+
+    function animate(){
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        
+        if ( controlsEnabled === true ) {
+            //获取到控制器对象
+            var control = controls.getObject();
+            //获取刷新时间
+            var delta = clock.getDelta();
+
+            //velocity每次的速度，为了保证有过渡
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= 9.8 * 100.0 * delta; // 默认下降的速度
+
+            //获取当前按键的方向并获取朝哪个方向移动
+            direction.z = Number( moveForward ) - Number( moveBackward );
+            direction.x = Number( moveLeft ) - Number( moveRight );
+            //将法向量的值归一化
+            direction.normalize();
+            console.log(control)
+            group.position.set(control.position.x,control.position.y,control.position.z);
+            //判断是否接触到了模型 rotation 表示当前控制器绑定的相机的朝向
+            rotation.copy(control.getWorldDirection(new THREE.Vector3()).multiply(new THREE.Vector3(-1, 0, -1)));
+
+            //判断鼠标按下的方向
+            var m = new THREE.Matrix4();
+            if(direction.z > 0){
+                if(direction.x > 0){
+                    m.makeRotationY(Math.PI/4);
+                }
+                else if(direction.x < 0){
+                    m.makeRotationY(-Math.PI/4);
+                }
+                else{
+                    m.makeRotationY(0);
+                }
+            }
+            else if(direction.z < 0){
+                if(direction.x > 0){
+                    m.makeRotationY(Math.PI/4*3);
+                }
+                else if(direction.x < 0){
+                    m.makeRotationY(-Math.PI/4*3);
+                }
+                else{
+                    m.makeRotationY(Math.PI);
+                }
+            }
+            else{
+                if(direction.x > 0){
+                    m.makeRotationY(Math.PI/2);
+                }
+                else if(direction.x < 0){
+                    m.makeRotationY(-Math.PI/2);
+                }
+            }
+            //给向量使用变换矩阵
+            rotation.applyMatrix4(m);
+            // horizontal.setDirection(rotation);
+            horizontalRaycaster.set( control.position , rotation );
+
+            var horizontalIntersections = horizontalRaycaster.intersectObjects( scene.children, true);
+            var horOnObject = horizontalIntersections.length > 0;
+
+            //判断移动方向修改速度方向
+            if(!horOnObject){
+                if ( moveForward || moveBackward ) velocity.z -= direction.z * speed * delta;
+                if ( moveLeft || moveRight ) velocity.x -= direction.x * speed * delta;
+            }
+
+            //复制相机的位置
+            downRaycaster.ray.origin.copy( control.position );
+            //获取相机靠下10的位置
+            downRaycaster.ray.origin.y -= 10;
+            //判断是否停留在了立方体上面
+            var intersections = downRaycaster.intersectObjects( scene.children, true);
+            var onObject = intersections.length > 0;
+            //判断是否停在了立方体上面
+            if ( onObject === true ) {
+                velocity.y = Math.max( 0, velocity.y );
+                canJump = true;
+            }
+            //根据速度值移动控制器
+            control.translateX( velocity.x * delta );
+            control.translateY( velocity.y * delta );
+            control.translateZ( velocity.z * delta );
+
+            //保证控制器的y轴在10以上
+            if ( control.position.y < 10 ) {
+                velocity.y = 0;
+                control.position.y = 10;
+                canJump = true;
+            }
+        }
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+
+    function launchFullScreen(element) {
+        /*if (element.requestFullscreen) {
+            element.requestFullscreen();
+        }
+        else if (element.mozRequestFullScreen) {
+            element.mozRequestFullScreen();
+        }
+        else if (element.webkitRequestFullscreen) {
+            element.webkitRequestFullscreen();
+        }
+        else if (element.msRequestFullscreen) {
+            element.msRequestFullscreen();
+        }*/
+    }
+
+     //添加纹理的方法
+     function setRandomColors(object, scale) {
+        //获取children数组
+        var children = object.children;
+
+        //如果当前模型有子元素，则遍历子元素
+        if (children && children.length > 0) {
+            children.forEach(function (e) {
+                setRandomColors(e, scale)
+            });
+        }
+        else {
+            if (object instanceof THREE.Mesh) {
+                //如果当前的模型是楼层，则设置固定的颜色，并且透明化
+                if(Array.isArray(object.material)){
+                    for(var i = 0; i<object.material.length; i++){
+                        var material = object.material[i];
+                        var color = scale(Math.random()).hex();
+                        if (material.name.indexOf("building") === 0) {
+                            material.color = new THREE.Color(color);
+                            material.transparent = true;
+                            material.opacity = 0.7;
+                            material.depthWrite = false;
+                        }
+                    }
+                }
+                // 如果不是场景组，则给当前mesh添加纹理
+                else{
+                    //随机当前模型的颜色
+                    object.material.color = new THREE.Color(scale(Math.random()).hex());
+                }
+            }
+        }
+    }
+
+    function initPointerLock() {
+        //实现鼠标锁定的教程地址 http://www.html5rocks.com/en/tutorials/pointerlock/intro/
+        var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
+        if ( havePointerLock ) {
+            var element = document.body;
+            var pointerlockchange = function ( event ) {
+                if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
+                    controlsEnabled = true;
+                    controls.enabled = true;
+                    blocker.style.display = 'none';
+                } else {
+                    controls.enabled = false;
+                    blocker.style.display = 'block';
+                    instructions.style.display = '';
+                }
+            };
+            var pointerlockerror = function ( event ) {
+                instructions.style.display = '';
+            };
+            // 监听变动事件
+            document.addEventListener( 'pointerlockchange', pointerlockchange, false );
+            document.addEventListener( 'mozpointerlockchange', pointerlockchange, false );
+            document.addEventListener( 'webkitpointerlockchange', pointerlockchange, false );
+            document.addEventListener( 'pointerlockerror', pointerlockerror, false );
+            document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
+            document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
+            instructions.addEventListener( 'click', function ( event ) {
+                instructions.style.display = 'none';
+                //全屏
+                launchFullScreen(renderer.domElement);
+                // 锁定鼠标光标
+                element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+                element.requestPointerLock();
+            }, false );
+        }
+        else {
+            instructions.innerHTML = '你的浏览器不支持相关操作，请更换浏览器';
+        }
+    }
+
+
+</script>
+</html>

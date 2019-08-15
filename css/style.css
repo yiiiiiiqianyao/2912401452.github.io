@@ -3,7 +3,6 @@ html, body {
   width: 100%;
   margin: 0;
   overflow: hidden;
-  background-color: aquamarine;
 }
 
 #header {
@@ -24,10 +23,18 @@ html, body {
   border: 2px salmon solid;
 }
 
+#content h1 {
+  text-align: center;
+}
+
 #footer {
   width: 80%;
   margin: 20px auto;
   border: 2px solid red;
   height: 20%;
+}
+
+#footer h2 {
+  text-align: center;
 }
 /*# sourceMappingURL=style.css.map */
