@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <script src="../src/libs/perlin.js"></script>
+</head>
+<body>
+    
+</body>
+<script>
+    var scene, camera, renderer, clock, controlller
+    var planeGeometry
+    var pn = new Perlin('pn')
+    // console.log(pn)
+    // Perlin {noise: ƒ(x,y,z)}
+
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+        camera.position.set(50,30,50)
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        // renderer.setClearColor(new THREE.Color(0x000000))
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        // renderer.shadowMap.enabled = true
+        
+        
+        var axisHelper = new THREE.AxesHelper( 10 )
+        scene.add( axisHelper )
+
+        planeGeometry = new THREE.PlaneGeometry(120,120,100,100)
+        var mat = new THREE.MeshPhongMaterial({ 
+            color       : 0x436EEE, // 材质颜色 
+            specular    : 0xffffff, // 高亮颜色
+            shininess   : 25,      // 亮度
+         })
+        for(var i =0;i < planeGeometry.vertices.length;i++){
+            var vertex = planeGeometry.vertices[i]
+            vertex.z = pn.noise(vertex.x/20,vertex.y/20,0)*10
+        }
+        planeGeometry.computeFaceNormals()      //    
+        planeGeometry.computeVertexNormals()    // 用于保证正确渲染纹理 光照 阴影
+        var plane = new THREE.Mesh(planeGeometry,mat)
+        plane.rotation.x = -Math.PI/2
+       
+        plane.receiveShadow = true
+        plane.castShadow = true
+        scene.add(plane)
+        /**
+            * 光源设置
+            */
+        // 方向光1
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9)
+        directionalLight.position.set(-400, 200, -300)
+        directionalLight.castShadow = true
+        scene.add(directionalLight);
+        // 方向光2
+        var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9)
+        directionalLight2.position.set(-400, -200, -300)
+        scene.add(directionalLight2)
+        //环境光
+        var ambient = new THREE.AmbientLight(0xffffff, 0.6)
+        scene.add(ambient);
+
+        controlller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+    var count = 0
+    function animate(){
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        controlller.update(clock.getDelta())
+        // console.log(1)
+        count+=0.1
+        for(var i =0;i < planeGeometry.vertices.length;i++){
+            var vertex = planeGeometry.vertices[i]
+            vertex.z = pn.noise((vertex.x + count*2)/10,(vertex.y+0*count)/10,count*0.1)*5
+            // pn.noise(x,y,z)  x,y 可以用于生成( 固定 x,y 生成固定的地形 )地形 z 可以用来调整生成的地形
+            // vertex.x + count / vertex.y+count 通过增加 count 的值导致 perlin 根据 x/y 生成的 z 高度值整体移动 造成类似波浪的效果\
+            // vertex.x+count 可以用来调整水面的流动
+        }
+        planeGeometry.computeFaceNormals()      //    
+        planeGeometry.computeVertexNormals()    // 用于保证正确渲染纹理 光照 阴影
+        planeGeometry.verticesNeedUpdate = true
+        planeGeometry.normalsNeedUpdate = true
+        planeGeometry.colorsNeedUpdate = true
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+</script>
+</html>
