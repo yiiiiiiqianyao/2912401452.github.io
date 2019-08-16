@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <style>
+        html,body{
+            width: 100%;height: 100%;
+        }
+        #container{
+            width: 100%;height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+</body>
+
+        <!-- 
+            gl_Position = vec4(position,1.0); 
+            modelMatrix         模型矩阵
+            viewMatrix          视图矩阵(相机对象的世界矩阵逆矩阵)
+            projectionMatrix    投影矩阵(相机对象的投影矩阵)
+        -->
+<script id="vertexShader" type="x-shader/x-vertex">
+    // attribute vec2 uv; // 系统会自动声明顶点纹理坐标变量 uv
+    varying vec2 vUv;   // varying 关键字声明一个变量表示顶点纹理坐标插值后的结果
+    void main(){
+        // 将纹理坐标对象uv进行插值计算
+        vUv = uv;
+        gl_PointSize = 20.0;
+        gl_Position = projectionMatrix*viewMatrix*modelMatrix*vec4(position,1.0);
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+    // uniform vec3 color;
+    // 声明一个浮点数 时间变量来控制UV动画
+    uniform float time;
+    // 声明一个纹理对象变量
+    uniform sampler2D texture;
+    // 接受插值后的纹理坐标数据
+    varying vec2 vUv;
+    void main(){
+        // 内置函数texture2D通过纹理坐标vUv获得贴图texture的像素值
+        vec4 texturecolor = texture2D(texture,vUv);
+        vec2 newT = vUv + vec2(-0.02,0.02)*time;
+        gl_FragColor = texture2D(texture,newT);
+        gl_FragColor.a*0.5;   // 透明分量
+        // gl_FragColor.r   // -- 颜色分量
+        // gl_FragColor.g
+        // gl_FragColor.b
+    }
+</script>
+<script>
+        // renderers -> shaders -> ShaderChunk
+    window.onload = function(){
+        let container = document.getElementById("container")
+        let scene,camera,renderer,controller,mixer
+        let plane,material,textureLoader,group,airTexture,clock = new THREE.Clock()
+        init()
+        function init(){
+            scene = new THREE.Scene()
+            camera = new THREE.PerspectiveCamera(70, container.clientWidth/container.clientHeight, 0.01, 1000)
+            camera.position.set(40,40,40)
+            camera.lookAt(scene.position)
+            renderer = new THREE.WebGLRenderer({antialias: true})
+            renderer.setSize(container.clientWidth, container.clientHeight)
+            controller = new THREE.OrbitControls(camera, renderer.domElement)
+            container.appendChild(renderer.domElement)
+            // var axesHelper = new THREE.AxesHelper( 20 )
+            // scene.add( axesHelper )
+
+            textureLoader = new THREE.TextureLoader()
+
+            group = new THREE.Group()   // 组对象，用于组合地球和大气的网格模型
+
+            var earthGeometry = new THREE.SphereBufferGeometry(30,60,60)
+            var earthMaterial = new THREE.MeshPhongMaterial({
+                map:textureLoader.load("uvsrc/Earth.png"),              // 颜色贴图
+                normalMap:textureLoader.load("uvsrc/EarthNormal.png"),  // 法线贴图
+                normalScale:new THREE.Vector2(2.9,2.9),
+                specularMap:textureLoader.load("uvsrc/EarthSpec.png"),  // 高光贴图
+                transparent:true,
+                opacity:0.7
+            })
+            var earthMesh = new THREE.Mesh(earthGeometry,earthMaterial)
+            group.add(earthMesh)
+
+            var airGeometry = new THREE.SphereBufferGeometry(31,60,60)
+            airTexture = textureLoader.load("uvsrc/air.png")
+            // 纹理设置重复，使得效果循环   使得纹理坐标的偏移超过1的时候渲染效果会重复
+            airTexture.wrapS = THREE.RepeatWrapping
+            airTexture.wrapT = THREE.RepeatWrapping
+            var airMaterial = new THREE.MeshPhongMaterial({
+                map:airTexture,
+                transparent:true,
+                opacity:0.5
+            })
+           
+            material = new THREE.ShaderMaterial({
+                uniforms:{
+                    texture:{value:airTexture},
+                    time:{value:1.0}
+                },
+                transparent:true, // 开启透明度
+                vertexShader:document.getElementById("vertexShader").textContent,
+                fragmentShader:document.getElementById("fragmentShader").textContent
+            })
+            
+
+            // airMesh = new THREE.Mesh(airGeometry,airMaterial)
+            airMesh = new THREE.Mesh(airGeometry,material)
+            group.add(airMesh)
+
+            scene.add(group)
+
+            /**
+             * 光源设置
+             */
+            // 方向光1
+            var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight.position.set(400, 200, 300);
+            scene.add(directionalLight);
+            // 方向光2
+            var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight2.position.set(-400, -200, -300);
+            scene.add(directionalLight2);
+            //环境光
+            var ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            animate()
+        }
+        function animate(){
+            renderer.render(scene,camera)
+            // -- shader --
+            // 获得两次渲染的时间间隔deltatime
+            // clock.getDelta()
+            var deltatime = clock.getDelta()
+            // console.log(deltatime)
+            // 更新 fragment shader 中的uniform时间
+            material.uniforms.time.value += deltatime
+            // -- shader--
+
+            // -- UV --
+            // 每次渲染都对纹理对象进行偏移 本质上是改变顶点的UV坐标
+            // airTexture.offset.x += 0.001
+            // airTexture.offset.y -= 0.001
+            // -- UV --
+
+            group.rotateY(-0.005)
+            controller.update()
+            requestAnimationFrame(animate)
+        }
+    }
+</script>
+</html>

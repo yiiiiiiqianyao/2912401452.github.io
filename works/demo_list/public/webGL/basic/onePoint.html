@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        #can{
+            display: block;
+            margin: 50px auto;
+        }
+    </style>
+    <script src="../src/js/webGL/webgl-debug.js"></script>
+    <script src="../src/js/webGL/webgl-utils.js"></script>
+    <script src="../src/js/webGL/cuon-utils.js"></script>
+    <title>Document</title>
+
+</head>
+<body onload="start()">
+    <canvas id="can" width="1200px" height="800px">
+        Your broswer not support
+    </canvas>
+    <script>
+        function start(){
+            let canvas = document.getElementById('can')
+            let gl = getWebGLContext(canvas)    // 由cuon-utils.js提供
+            if(!gl){
+                console.log('Failed to get the rendering context for WebGL')
+                return
+            }
+            // 设置着色器代码
+            let VSHADER_SOURCE = getVSHADER()
+            let FSHADER_SOURCE = getFSHADER()
+            // 初始化着色器
+            if(!initShaders(gl,VSHADER_SOURCE,FSHADER_SOURCE)){
+                console.log('Failed to initialize shaders')
+                return
+            }
+            gl.clearColor(0.0,0.0,0.0,1.0)
+            gl.clear(gl.COLOR_BUFFER_BIT)
+
+            gl.drawArrays(gl.POINTS,0,1)
+        }
+        function getVSHADER(){
+            return `
+                void main(){\n
+                    gl_Position = vec4(0.0,0.0,0.0,1.0);\n
+                    gl_PointSize = 10.0;\n
+                }\n
+            `
+        }
+        function getFSHADER(){
+            return `
+                void main(){\n
+                    gl_FragColor = vec4(1.0,0.0,0.0,1.0);\n
+                }\n
+            `
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        #can{
+            display: block;
+            margin: 50px auto;
+        }
+    </style>
+    <script src="../src/js/webGL/webgl-debug.js"></script>
+    <script src="../src/js/webGL/webgl-utils.js"></script>
+    <script src="../src/js/webGL/cuon-utils.js"></script>
+    <title>Document</title>
+
+</head>
+<body onload="start()">
+    <canvas id="can" width="1200px" height="800px">
+        Your broswer not support
+    </canvas>
+    <script>
+        function start(){
+            let canvas = document.getElementById('can')
+            let gl = getWebGLContext(canvas)    // 由cuon-utils.js提供
+            if(!gl){
+                console.log('Failed to get the rendering context for WebGL')
+                return
+            }
+            // 设置着色器代码
+            let VSHADER_SOURCE = getVSHADER()
+            let FSHADER_SOURCE = getFSHADER()
+
+            // 初始化着色器
+            if(!initShaders(gl,VSHADER_SOURCE,FSHADER_SOURCE)){
+                console.log('Failed to initialize shaders')
+                return
+            }
+            // 获取attribute变量在顶点着色器中的存储位置 由于gl.program着色器对象属性是在initShaders中创建的，所以需要在它之后调用
+            // let a_Position = gl.getAttribLocation(gl.program,'a_Position')
+            // if(a_Position < 0){
+            //     console.log('Failed to get the storage location of a_Position')
+            //     return
+            // }
+            // let a_PointSize = gl.getAttribLocation(gl.program,'a_PointSize')
+            // if(a_PointSize < 0){
+            //     console.log('Failed to get the storage location of a_PointSize')
+            //     return
+            // }
+            //将顶点位置传输给attribute变量 ...1f,2f,3f,4f 同族函数
+            // gl.vertexAttrib3f(a_Position,0.0,0.0,0.0)
+            // gl.vertexAttrib1f(a_PointSize,50.0)
+
+            var n = initVertexBuffers(gl)
+
+            gl.clearColor(0.0,0.0,0.0,1.0)
+            gl.clear(gl.COLOR_BUFFER_BIT)
+
+            // gl.drawArrays(gl.POINTS,0,1)
+            gl.drawArrays(gl.POINTS,0,3)
+        }// 启动方法
+
+        function initVertexBuffers(gl){
+            var vertices = new Float32Array([0.0,0.5,-0.5,-0.5,0.5,-0.5]) // 点的坐标数组 类型化数组
+
+            var n = 3   // 定义点的个数
+
+            var vertexBuffer = gl.createBuffer()    // 创建顶点缓冲区对象   gl.deleteBuffer(buffer) 删除缓冲区对象,buffer是待删除的缓冲区对象
+            if(!vertexBuffer){
+                console.log('Failed to create the buffer object')
+                return
+            }
+
+            gl.bindBuffer(gl.ARRAY_BUFFER,vertexBuffer) // 将顶点缓冲区对象绑定到目标对象 目标对象表示缓冲区对象的用途
+            gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW)  // 向缓冲区对象中写入数据
+
+            var a_Position = gl.getAttribLocation(gl.program,'a_Position')  // 获取顶点着色器中为a_Position的attribute变量的地址
+            gl.vertexAttribPointer(a_Position,2,gl.FLOAT,false,0,0) // 将缓冲区对象分配给a_Position变量 传递整个缓冲区对象的指针引用
+            /*
+                gl.vertexAttribPointer(location,size,type,normalized,stride,offset)
+                location    指定待分配的attribute变量的存储位置
+                size        指定缓冲区中每个顶点的分量个数
+                type        指定数据格式    gl.FLOAT/gl.SHORT/gl.INT/gl.UNSIGNED_BYTE
+                normalized  传入true/false,表明是否将非浮点型的数据归一化到[0,1],[-1,1]之间
+                stride      指定相邻两个顶点之间的字节数，默认为0
+                offset      指定缓冲区对象中的偏移量，即attribute变量从何处开始存储(从起始位置开始，offset为0)
+            */
+            gl.enableVertexAttribArray(a_Position)  // 连接a_Position变量和分配给它的缓冲区变量 开启attribute变量
+
+            return n
+        }
+        function getVSHADER(){
+            return `
+                attribute vec4 a_Position;\n
+                attribute float a_PointSize;\n
+                void main(){\n
+                    gl_Position = a_Position;\n
+                    gl_PointSize = 10.0;\n
+                }\n
+            `
+        }
+        function getFSHADER(){
+            return `
+                void main(){\n
+                    gl_FragColor = vec4(1.0,0.0,0.0,1.0);\n
+                }\n
+            `
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+1、检测 window.requestAnimationFrame 是否存在并给出备用方案
+2、检测 window.cancelAnimationFrame 是否存在并给出备用方案
+3、自运行方法 WebGLUtils 定义一些方法
+    makeFailHTML：function
+    setupWebGL
+    create3DContext

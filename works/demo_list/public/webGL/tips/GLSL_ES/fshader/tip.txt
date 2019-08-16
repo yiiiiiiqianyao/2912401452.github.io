@@ -1,0 +1,3 @@
+内置在片元着色器中的变量
+    vec4 gl_FragColor   指定片元格式( RGBA )
+    

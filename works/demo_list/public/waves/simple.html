@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin:0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<script src="../src/three.js"></script>
+<script src="../src/OrbitControls.js"></script>
+<body>
+    <div id="container"></div>
+<script>
+    var scene, camera, renderer
+    var container, controller
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var geometry = new THREE.Geometry()
+    var particles = 10000, positions = [], colors = [], width_len = 100, depth_len = 100 ,space = 10, count = 0
+
+    init()
+    animate()
+    // - Functions -
+    function  init() {
+        container = document.getElementById("container")
+        camera = new THREE.PerspectiveCamera( 120, width / height, 1, 10000 )
+        camera.position.z = width_len*space/2
+        camera.position.x = width_len*space/2
+        camera.position.y = width_len*space/8
+
+        scene = new THREE.Scene()
+        
+        for(var i = 0;i < width_len;i++){
+            for(var j = 0;j < depth_len;j++){
+                var star = new THREE.Vector3();
+                star.x = i*10;star.y = 0;star.z = j*10;
+                geometry.vertices.push( star );
+               
+            }
+        }
+       
+        var mat = new THREE.PointsMaterial( { color: 0x888888 } )
+        var cloud = new THREE.Points(geometry,mat)
+        cloud.sortParticles = true
+        scene.add(cloud)
+        
+
+        renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setClearColor (new THREE.Color(0x000000),1)
+        controller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild( renderer.domElement ); 
+    }
+
+    function animate(){
+        for(var i = 0;i < width_len;i++){
+            for(var j = 0;j < depth_len;j++){
+                geometry.vertices[i*width_len + j].y = (Math.sin((i + count)*0.3)*10) + (Math.sin((j + count)*0.5)*10)
+               
+            }
+        }
+        geometry.verticesNeedUpdate = true
+        count += 0.1
+        requestAnimationFrame( animate )
+        controller.update()
+        renderer.render( scene, camera )
+    }
+</script>
+</body>
+</html>

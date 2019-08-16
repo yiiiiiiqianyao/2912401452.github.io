@@ -1,0 +1,5 @@
+内置在顶点着色器中的变量
+vec4 gl_Position    表示顶点位置
+    vec4( v0, v1, v2, v3 ) 四个浮点型分量
+    齐次坐标( x, y, z, w ) 等价于三维坐标 ( x/w, y/w, z/w )
+float gl_PointSize  表示顶点尺寸
