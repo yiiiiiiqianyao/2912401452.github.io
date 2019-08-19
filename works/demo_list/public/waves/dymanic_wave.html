@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <script src="../src/libs/SimplexNoise.js"></script>
+    <script src="../src/libs/GPUComputationRenderer.js"></script>
+</head>
+<body>
+    
+</body>
+<!-- This is the 'compute shader' for the water heightmap: -->
+<script id="heightmapFragmentShader" type="x-shader/x-fragment">
+    #include <common>
+    uniform vec2 mousePos;
+    uniform float mouseSize;
+    uniform float viscosityConstant;
+    uniform float heightCompensation;
+    void main()	{
+        vec2 cellSize = 1.0 / resolution.xy;
+        vec2 uv = gl_FragCoord.xy * cellSize;
+        // heightmapValue.x == height from previous frame
+        // heightmapValue.y == height from penultimate frame
+        // heightmapValue.z, heightmapValue.w not used
+        vec4 heightmapValue = texture2D( heightmap, uv );
+        // Get neighbours
+        vec4 north = texture2D( heightmap, uv + vec2( 0.0, cellSize.y ) );
+        vec4 south = texture2D( heightmap, uv + vec2( 0.0, - cellSize.y ) );
+        vec4 east = texture2D( heightmap, uv + vec2( cellSize.x, 0.0 ) );
+        vec4 west = texture2D( heightmap, uv + vec2( - cellSize.x, 0.0 ) );
+        // https://web.archive.org/web/20080618181901/http://freespace.virgin.net/hugo.elias/graphics/x_water.htm
+        float newHeight = ( ( north.x + south.x + east.x + west.x ) * 0.5 - heightmapValue.y ) * viscosityConstant;
+        // Mouse influence
+        float mousePhase = clamp( length( ( uv - vec2( 0.5 ) ) * BOUNDS - vec2( mousePos.x, - mousePos.y ) ) * PI / mouseSize, 0.0, PI );
+        newHeight += ( cos( mousePhase ) + 1.0 ) * 0.28;
+        heightmapValue.y = heightmapValue.x;
+        heightmapValue.x = newHeight;
+        gl_FragColor = heightmapValue;
+    }
+</script>
+
+<!-- This is the water visualization shader, copied from the MeshPhongMaterial and modified: -->
+<script id="waterVertexShader" type="x-shader/x-vertex">
+    uniform sampler2D heightmap; // 接受水面高度的信息
+    #define PHONG
+    varying vec3 vViewPosition;
+    #ifndef FLAT_SHADED
+        varying vec3 vNormal;
+    #endif
+    #include <common>
+    #include <uv_pars_vertex>
+    #include <uv2_pars_vertex>
+    #include <displacementmap_pars_vertex>
+    #include <envmap_pars_vertex>
+    #include <color_pars_vertex>
+    #include <morphtarget_pars_vertex>
+    #include <skinning_pars_vertex>
+    #include <shadowmap_pars_vertex>
+    #include <logdepthbuf_pars_vertex>
+    #include <clipping_planes_pars_vertex>
+    void main() {
+        vec2 cellSize = vec2( 1.0 / WIDTH, 1.0 / WIDTH );
+        #include <uv_vertex>
+        #include <uv2_vertex>
+        #include <color_vertex>
+        // # include <beginnormal_vertex>
+        // Compute normal from heightmap
+        vec3 objectNormal = vec3(
+            ( texture2D( heightmap, uv + vec2( - cellSize.x, 0 ) ).x - texture2D( heightmap, uv + vec2( cellSize.x, 0 ) ).x ) * WIDTH / BOUNDS,
+            ( texture2D( heightmap, uv + vec2( 0, - cellSize.y ) ).x - texture2D( heightmap, uv + vec2( 0, cellSize.y ) ).x ) * WIDTH / BOUNDS,
+            1.0 );
+        //<beginnormal_vertex>
+        #include <morphnormal_vertex>
+        #include <skinbase_vertex>
+        #include <skinnormal_vertex>
+        #include <defaultnormal_vertex>
+    #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
+        vNormal = normalize( transformedNormal );
+    #endif
+        //# include <begin_vertex>
+        float heightValue = texture2D( heightmap, uv ).x;
+        vec3 transformed = vec3( position.x, position.y, heightValue );
+        //<begin_vertex>
+        #include <morphtarget_vertex>
+        #include <skinning_vertex>
+        #include <displacementmap_vertex>
+        #include <project_vertex>
+        #include <logdepthbuf_vertex>
+        #include <clipping_planes_vertex>
+        vViewPosition = - mvPosition.xyz;
+        #include <worldpos_vertex>
+        #include <envmap_vertex>
+        #include <shadowmap_vertex>
+    }
+</script>
+<script>
+    var scene, camera, renderer, clock, controlller
+    // var shadermaterial
+    // Texture width for simulation
+    var WIDTH = 128;
+    // Water size in system units
+    var BOUNDS = 512;
+    var BOUNDS_HALF = BOUNDS * 0.5;
+    var container, stats;
+    var camera, scene, renderer;
+    var mouseMoved = false;
+    var mouseCoords = new THREE.Vector2();
+    var raycaster = new THREE.Raycaster();
+    var waterMesh;
+    var meshRay;
+    var gpuCompute;
+    var heightmapVariable;
+    var waterUniforms;
+    var waterNormal = new THREE.Vector3();
+    var NUM_SPHERES = 5;
+    var simplex = new SimplexNoise();
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
+        camera.position.x = 500
+        camera.position.z = 500
+        camera.position.y = 500
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        // var back_mat = {
+        //     map:"",
+        //     color: 0x6CA6CD,
+        //     opacity:0.5,
+        //     transparent:true
+        // }
+        var plane_texture = new THREE.TextureLoader().load('./tiles.jpg')
+        var pg = new THREE.PlaneBufferGeometry(BOUNDS,BOUNDS)
+        p1 = new THREE.Mesh(pg,new THREE.MeshBasicMaterial({ map:plane_texture }))
+        p1.translateZ(-BOUNDS/2)
+        p1.translateY(-BOUNDS/4)
+        scene.add(p1)
+        p2 = new THREE.Mesh(pg,new THREE.MeshBasicMaterial({ map:plane_texture }))
+        p2.rotation.y = Math.PI/2
+        p2.translateZ(-BOUNDS/2)
+        p2.translateY(-BOUNDS/4)
+        scene.add(p2)
+        p3 = new THREE.Mesh(pg,new THREE.MeshBasicMaterial({ map:plane_texture }))
+        p3.translateY(-(BOUNDS*3)/4)
+        p3.rotation.x = -Math.PI/2
+        scene.add(p3)
+        p4 = new THREE.Mesh(pg,new THREE.MeshBasicMaterial({ map:plane_texture }))
+        p4.translateY(-BOUNDS/4)
+        p4.translateX(BOUNDS/2)
+        p4.rotation.y = -Math.PI/2
+        scene.add(p4)
+        p4 = new THREE.Mesh(pg,new THREE.MeshBasicMaterial({ map:plane_texture }))
+        p4.translateY(-BOUNDS/4)
+        p4.translateZ(BOUNDS/2)
+        p4.rotation.y = -Math.PI
+        scene.add(p4)
+        
+
+        var cube = new THREE.Mesh( new THREE.BoxGeometry( BOUNDS, BOUNDS*3/4, BOUNDS ), new THREE.MeshBasicMaterial( {
+            color: 0x6CA6CD,
+            opacity:0.5,
+            transparent:true
+        } ) );
+        cube.position.y = -BOUNDS*3/8
+        // scene.add( cube )
+
+        var axisHelper = new THREE.AxesHelper( 100 )
+        axisHelper.position.y = -5
+        scene.add( axisHelper )
+
+        /**
+            * 光源设置
+            */
+        // 方向光1
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9)
+        directionalLight.position.set(400, 200, 300)
+        scene.add(directionalLight)
+        // 方向光2
+        var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9)
+        directionalLight2.position.set(-400, -200, -300)
+        scene.add(directionalLight2)
+        //环境光
+        var ambient = new THREE.AmbientLight(0xffffff, 0.6)
+        scene.add(ambient)
+
+        controlller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+        document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+        document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+        document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+        document.addEventListener( 'keydown', function ( event ) {
+
+            // W Pressed: Toggle wireframe
+            if ( event.keyCode === 87 ) {
+                waterMesh.material.wireframe = ! waterMesh.material.wireframe;
+                waterMesh.material.needsUpdate = true;
+            }
+        }, false )
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false )
+        initWater()
+}
+
+    function animate(){
+        // Set uniforms: mouse interaction
+        var uniforms = heightmapVariable.material.uniforms
+        if ( mouseMoved ) { // 当有鼠标移动的时候
+            raycaster.setFromCamera( mouseCoords, camera )
+            var intersects = raycaster.intersectObject( meshRay ) // meshRay 是覆盖在水面上的用于捕获鼠标对水面动作的垫层 
+            if ( intersects.length > 0 ) {  // 鼠标经过水面
+                var point = intersects[ 0 ].point
+                uniforms[ "mousePos" ].value.set( point.x, point.z )
+            } else {
+                uniforms[ "mousePos" ].value.set( 10000, 10000 )
+            }
+            mouseMoved = false
+        } else {
+            uniforms[ "mousePos" ].value.set( 10000, 10000 )
+        }
+        // Do the gpu computation
+        gpuCompute.compute()
+
+        // Get compute output in custom uniform
+        waterUniforms[ "heightmap" ].value = gpuCompute.getCurrentRenderTarget( heightmapVariable ).texture
+
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        controlller.update(clock.getDelta())
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+
+    function initWater(){
+        // var materialColor = 0x6CA6CD
+        var materialColor = 0x6CA6CD
+        var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH - 1 )
+        // material: make a ShaderMaterial clone of MeshPhongMaterial, with customized vertex shader
+        var material = new THREE.ShaderMaterial( {
+            uniforms: THREE.UniformsUtils.merge( [
+                THREE.ShaderLib[ 'phong' ].uniforms,
+                {
+                    "heightmap": { value: null }
+                }
+            ] ),
+            vertexShader: document.getElementById( 'waterVertexShader' ).textContent,
+            fragmentShader: THREE.ShaderChunk[ 'meshphong_frag' ]
+        } )
+        material.lights = true
+        // Material attributes from MeshPhongMaterial
+        material.color = new THREE.Color( materialColor )
+        material.specular = new THREE.Color( 0x97FFFF )
+        material.shininess = 50
+        material.opacity = 0.5
+        material.transparent = true
+        material.side = THREE.DoubleSide
+        // Sets the uniforms with the material values
+        material.uniforms[ "diffuse" ].value = material.color
+        material.uniforms[ "specular" ].value = material.specular
+        material.uniforms[ "shininess" ].value = Math.max( material.shininess, 1e-4 )
+        material.uniforms[ "opacity" ].value = material.opacity
+        // Defines
+        material.defines.WIDTH = WIDTH.toFixed( 1 )
+        material.defines.BOUNDS = BOUNDS.toFixed( 1 )
+
+        waterUniforms = material.uniforms
+        waterMesh = new THREE.Mesh( geometry, material )
+        waterMesh.castShadow = true
+        waterMesh.rotation.x = - Math.PI / 2
+        waterMesh.matrixAutoUpdate = false
+        waterMesh.updateMatrix()
+        scene.add( waterMesh )
+
+        // Mesh just for mouse raycasting
+        var geometryRay = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, 1, 1 )
+        meshRay = new THREE.Mesh( geometryRay, new THREE.MeshBasicMaterial( { color: 0xFFFFFF, visible: false } ) )
+        meshRay.rotation.x = - Math.PI / 2
+        meshRay.matrixAutoUpdate = false
+        meshRay.updateMatrix()
+        scene.add( meshRay )
+
+        // Creates the gpu computation class and sets it up
+        gpuCompute = new GPUComputationRenderer( WIDTH, WIDTH, renderer );
+        var heightmap0 = gpuCompute.createTexture();
+
+        fillTexture( heightmap0 ) // 赋予水面初始的随机高度
+
+        heightmapVariable = gpuCompute.addVariable( "heightmap", document.getElementById( 'heightmapFragmentShader' ).textContent, heightmap0 )
+        gpuCompute.setVariableDependencies( heightmapVariable, [ heightmapVariable ] )
+        heightmapVariable.material.uniforms[ "mousePos" ] = { value: new THREE.Vector2( 10000, 10000 ) }
+        heightmapVariable.material.uniforms[ "mouseSize" ] = { value: 20.0 }
+        heightmapVariable.material.uniforms[ "viscosityConstant" ] = { value: 0.98 }
+        heightmapVariable.material.uniforms[ "heightCompensation" ] = { value: 0 }
+        heightmapVariable.material.defines.BOUNDS = BOUNDS.toFixed( 1 )
+        var error = gpuCompute.init()
+        if ( error !== null ) {
+            console.error( error )
+        }
+    }
+    function fillTexture( texture ) {
+        var waterMaxHeight = 20 // 水面的初始随机高度
+        function noise( x, y ) {
+            var multR = waterMaxHeight;
+            var mult = 0.025;
+            var r = 0;
+            for ( var i = 0; i < 15; i ++ ) {
+                r += multR * simplex.noise( x * mult, y * mult );
+                multR *= 0.53 + 0.025 * i;
+                mult *= 1.25;
+            }
+            return r;
+        }
+        var pixels = texture.image.data;
+        var p = 0;
+        for ( var j = 0; j < WIDTH; j ++ ) {
+            for ( var i = 0; i < WIDTH; i ++ ) {
+                var x = i * 128 / WIDTH;
+                var y = j * 128 / WIDTH;
+                pixels[ p + 0 ] = noise( x, y, 123.4 );
+                pixels[ p + 1 ] = pixels[ p + 0 ];
+                pixels[ p + 2 ] = 0;
+                pixels[ p + 3 ] = 1;
+                p += 4;
+            }
+        }
+    }
+
+    function setMouseCoords( x, y ) {
+        mouseCoords.set( ( x / renderer.domElement.clientWidth ) * 2 - 1, - ( y / renderer.domElement.clientHeight ) * 2 + 1 );
+        mouseMoved = true;
+    }
+
+    function onDocumentMouseMove( event ) {
+        setMouseCoords( event.clientX, event.clientY )
+    }
+
+    function onDocumentTouchStart( event ) {
+        if ( event.touches.length === 1 ) {
+            event.preventDefault();
+            setMouseCoords( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+        }
+    }
+
+    function onDocumentTouchMove( event ) {
+        if ( event.touches.length === 1 ) {
+            event.preventDefault();
+            setMouseCoords( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+        }
+    }
+
+    function onDocumentMouseDown(event){
+        setMouseCoords( event.clientX, event.clientY )
+    }
+
+</script>
+</html>

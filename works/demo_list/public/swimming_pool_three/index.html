@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+</head>
+<body>
+    
+</body>
+<script type="x-shader/x-vertex" id="vertexShader">
+    varying vec2 coord;
+    void main() {
+      coord = gl_Vertex.xy * 0.5 + 0.5;
+      gl_Position = vec4(gl_Vertex.xyz, 1.0);
+    }
+</script>
+
+<script type="x-shader/x-vertex" id="dropShader">
+    const float PI = 3.141592653589793;
+    uniform sampler2D texture;
+    uniform vec2 center;
+    uniform float radius;
+    uniform float strength;
+    varying vec2 coord;
+    void main() {
+    /* get vertex info */
+    vec4 info = texture2D(texture, coord);
+    
+    /* add the drop to the height */
+    float drop = max(0.0, 1.0 - length(center * 0.5 + 0.5 - coord) / radius);
+    drop = 0.5 - cos(drop * PI) * 0.5;
+    info.r += drop * strength;
+    
+    gl_FragColor = info;
+    }
+</script>
+
+<script type="x-shader/x-vertex" id="updateShader">
+    uniform sampler2D texture;
+    uniform vec2 delta;
+    varying vec2 coord;
+    void main() {
+      /* get vertex info */
+      vec4 info = texture2D(texture, coord);
+      
+      /* calculate average neighbor height */
+      vec2 dx = vec2(delta.x, 0.0);
+      vec2 dy = vec2(0.0, delta.y);
+      float average = (
+        texture2D(texture, coord - dx).r +
+        texture2D(texture, coord - dy).r +
+        texture2D(texture, coord + dx).r +
+        texture2D(texture, coord + dy).r
+      ) * 0.25;
+      
+      /* change the velocity to move toward the average */
+      info.g += (average - info.r) * 2.0;
+      
+      /* attenuate the velocity a little so waves do not last forever */
+      info.g *= 0.995;
+      
+      /* move the vertex along the velocity */
+      info.r += info.g;
+      
+      gl_FragColor = info;
+    }
+</script>
+
+<script type="x-shader/x-vertex" id="normalShader">
+    uniform sampler2D texture;
+    uniform vec2 delta;
+    varying vec2 coord;
+    void main() {
+      /* get vertex info */
+      vec4 info = texture2D(texture, coord);
+      
+      /* update the normal */
+      vec3 dx = vec3(delta.x, texture2D(texture, vec2(coord.x + delta.x, coord.y)).r - info.r, 0.0);
+      vec3 dy = vec3(0.0, texture2D(texture, vec2(coord.x, coord.y + delta.y)).r - info.r, delta.y);
+      info.ba = normalize(cross(dy, dx)).xz;
+      
+      gl_FragColor = info;
+    }
+</script>
+
+<script type="x-shader/x-vertex" id="sphereShader">
+    uniform sampler2D texture;
+    uniform vec3 oldCenter;
+    uniform vec3 newCenter;
+    uniform float radius;
+    varying vec2 coord;
+    
+    float volumeInSphere(vec3 center) {
+    vec3 toCenter = vec3(coord.x * 2.0 - 1.0, 0.0, coord.y * 2.0 - 1.0) - center;
+    float t = length(toCenter) / radius;
+    float dy = exp(-pow(t * 1.5, 6.0));
+    float ymin = min(0.0, center.y - dy);
+    float ymax = min(max(0.0, center.y + dy), ymin + 2.0 * dy);
+    return (ymax - ymin) * 0.1;
+    }
+    
+    void main() {
+    /* get vertex info */
+    vec4 info = texture2D(texture, coord);
+    
+    /* add the old volume */
+    info.r += volumeInSphere(oldCenter);
+    
+    /* subtract the new volume */
+    info.r -= volumeInSphere(newCenter);
+    
+    gl_FragColor = info;
+    }
+</script>
+
+<script type="x-shader/x-vertex" id="fragmentShader">
+    uniform sampler2D texture;
+    void main() {
+      gl_FragColor = texture2D(texture, vec2(0.5));
+    }
+</script>
+<script>
+    var scene, camera, renderer, clock, controlller
+    // var shadermaterial
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+        camera.position.z = 10
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        // renderer.setClearColor(new THREE.Color(0x000000))
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        // renderer.shadowMap.enabled = true
+
+        // shadermaterial = new THREE.ShaderMaterial( {
+        //     uniforms: {
+        //         tExplosion: {   // 网格着色器使用的纹理贴图
+        //             type: "t",
+        //             value: texture
+        //         },
+        //         time: {         // 网格顶点变换的间隔时间
+        //             type: "f",
+        //             value: 0.0
+        //         }
+        //     },
+        //     vertexShader: document.getElementById( 'vertexShader' ).textContent,
+        //     fragmentShader: document.getElementById( 'fragmentShader' ).textContent
+        // } );
+
+        var axisHelper = new THREE.AxesHelper( 10 )
+        scene.add( axisHelper )
+
+        /**
+            * 光源设置
+            */
+        // 方向光1
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight.position.set(400, 200, 300);
+        // directionalLight.castShadow = true
+        scene.add(directionalLight);
+        // 方向光2
+        var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight2.position.set(-400, -200, -300);
+        scene.add(directionalLight2);
+        //环境光
+        var ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+
+        controlller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+
+    function animate(){
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        controlller.update(clock.getDelta())
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+</script>
+</html>
