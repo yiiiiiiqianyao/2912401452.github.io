@@ -1,0 +1,21 @@
+html,body{
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+}
+body{
+    background-image: url(images/bg2.jpg);
+    background-size: 100% 100%;
+}
+::-webkit-scrollbar              { 
+    width:5px;
+}
+::-webkit-scrollbar-track        { 
+    border-radius:10px;
+}
+::-webkit-scrollbar-thumb        { 
+    border-radius:10px;
+    height: 112px;
+    background:rgba(112,202,255,0.56);
+}

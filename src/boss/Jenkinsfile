@@ -1,0 +1,148 @@
+pipeline {
+    agent {
+        docker {
+            image 'node:8-alpine'
+        }
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'npm install --unsafe-perm --registry=https://registry.npm.taobao.org'
+            }
+        }
+        stage('Deploy dev') {
+            when {
+                branch 'dev*'
+            }
+            steps {
+                echo "发布到开发环境"
+                sh 'npm run build:dev'
+                buildTar()
+                sshPublish('dev-server')
+            }
+        }
+
+        stage('Deploy beta') {
+            when {
+                branch 'beta'
+            }
+            steps {
+                echo "发布到测试环境"
+                sh 'npm run build:test'
+                buildTar()
+                sshPublish('beta-server')
+            }
+        }
+
+        stage('Deploy master') {
+            when {
+                branch 'master'
+            }
+            steps {
+                echo "发布到正式环境"
+                confirmToDeployMaster()
+            }
+        }
+    }
+    post {
+        always {
+            echo 'This will always run'
+        }
+        success {
+           //mailNotify('编译成功')
+           dingTalkNotify('编译成功')
+        }
+        unstable {
+            dingTalkNotify('编译异常')
+        }
+        failure {
+            //mailNotify('编译失败')
+            dingTalkNotify('编译失败')
+        }
+    }
+}
+
+def confirmToDeployBeta() {
+    try {
+        timeout(time: 2, unit: 'MINUTES') { // change to a convenient timeout for you
+            userInput = input(message: '是否发布到测试环境?', ok: 'Yes', 
+            parameters: [booleanParam(defaultValue: true, 
+            description: '如果想现在发布到测试环境,点击确认',name: 'Yes?')])
+            echo "发布到测试环境"
+            sh 'npm run build:test'
+            buildTar()
+            sshPublish('beta-server')
+        }
+    } catch(err) { // timeout reached or input false
+        echo "发布到测试环境,超时"
+    }
+}
+
+def confirmToDeployMaster() {
+    try {
+        timeout(time: 2, unit: 'MINUTES') { // change to a convenient timeout for you
+            userInput = input(message: '是否发布到正式环境?', ok: 'Yes', 
+            parameters: [booleanParam(defaultValue: true, 
+            description: '如果想现在发布到正式环境,点击确认',name: 'Yes?')])
+            echo "发布到正式环境"
+            sh 'npm run build'
+            buildTar()
+            sshPublish('master-server')
+        }
+    } catch(err) { // timeout reached or input false
+        echo "发布到正式环境,超时"
+    }
+}
+
+def buildTar() {
+    sh "tar -vczf dist-${BUILD_TAG}.tgz dist"
+    sh "mkdir -p target/dist && cp dist-${BUILD_TAG}.tgz dist/"
+}
+
+def sshPublish(String configName) {
+    def releaseDir = '/home/sftp_root/shared/robam/app'
+
+    sshPublisher(publishers:
+            [sshPublisherDesc(
+                    configName: configName,
+                    transfers: [
+                            sshTransfer(excludes: '',
+                                    execCommand: """
+                                                    mkdir -p ${releaseDir}
+                                                    tar -xvzf /home/sftp_root/shared/jenkins-upload/dist/dist-${BUILD_TAG}.tgz -C ${releaseDir}
+                                                    docker restart robam_app
+                                                """,
+                                    execTimeout: 120000,
+                                    flatten: false,
+                                    makeEmptyDirs: false,
+                                    noDefaultExcludes: false,
+                                    patternSeparator: '[, ]+',
+                                    remoteDirectory: '',
+                                    remoteDirectorySDF: false,
+                                    removePrefix: '',
+                                    sourceFiles: "dist/dist-${BUILD_TAG}.tgz")
+                    ],
+                    usePromotionTimestamp: false,
+                    useWorkspaceInPromotion: false,
+                    verbose: true
+            )]
+    )
+}
+
+def mailNotify(String message) {
+    mail(
+        body: "${env.JOB_NAME} 编译完成;构建的详情链接: ${env.BUILD_URL} ;GIT提交信息: ${env.GIT_URL}/${env.GIT_COMMIT}", 
+        from: 'austindev@163.com', 
+        subject: message + "${env.JOB_NAME}", 
+        to: 'austindev@kulchao.com')
+}
+
+def dingTalkNotify(String message) {
+    def imageUrl
+    if (message == '编译成功') {
+        imageUrl = 'http://qiniuservertest.kulchao.com/austin/jenkins-success.png'
+    } else {
+        imageUrl = 'http://qiniuservertest.kulchao.com/austin/jenkins-fail.png'
+    }
+    dingTalk accessToken: 'd00c25b795c61f331bdeea6b851177ac625b02d843f694a28554d709864352c9',imageUrl: imageUrl, jenkinsUrl: 'http://192.168.1.103:8016', message: message
+}

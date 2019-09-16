@@ -1,0 +1,35 @@
+{
+  "name": "robam",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "serve:test": "vue-cli-service serve --mode test",
+    "serve:dev": "vue-cli-service serve --mode development",
+    "build:dev": "vue-cli-service build --mode development",
+    "build:test": "vue-cli-service build --mode test",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@tweenjs/tween.js": "^17.4.0",
+    "core-js": "^2.6.5",
+    "qrcode2": "^1.2.3",
+    "vue": "^2.6.10",
+    "vue-router": "^3.0.3"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^3.9.0",
+    "@vue/cli-plugin-eslint": "^3.9.0",
+    "@vue/cli-service": "^3.9.0",
+    "axios": "^0.18.0",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.16.0",
+    "eslint-plugin-vue": "^5.0.0",
+    "postcss-pxtorem": "^4.0.1",
+    "sass": "^1.18.0",
+    "sass-loader": "^7.1.0",
+    "vue-cli-plugin-axios": "0.0.4",
+    "vue-template-compiler": "^2.6.10"
+  }
+}
