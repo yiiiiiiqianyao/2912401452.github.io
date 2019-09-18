@@ -2,7 +2,6 @@
   <div id="banner">
     <div class="img_wrap">
       <transition-group name="banner" tag="p">
-        <!-- <img v-for="(item,index) in banner_imgs"  v-show="current_img_index==index" :src="item.img_src" :key="index" alt=""> -->
         <img v-for="(item,index) in bannerList" v-show="current_img_index==index" :key="'item-' + index" :src="item.url" alt="">
       </transition-group>
     </div>

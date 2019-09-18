@@ -1,6 +1,5 @@
 <template>
   <div class="show_wrap">
-
     <div id="all">
       <div id="main">
         <div id="list">
@@ -8,7 +7,7 @@
         </div>
       </div>
     </div>
-    <Btnlist :current-mode="currentMode" @sun_event="sun_event" />
+    <Btnlist :current-mode="currentMode" :is-auto="isAuto" :is-activity="activities.length>0" @sun_event="sun_event" />
     <div id="red_pocket">
       <div class="box">
         <img
@@ -30,7 +29,6 @@
   </div>
 </template>
 <script>
-
 import libsApi from '@/api/urls/api'
 import QRCode from 'qrcode2'
 import Btnlist from '../components/Btnlist'
@@ -40,12 +38,10 @@ import Banner from '../components/Banner'
 export default {
   data() {
     return {
-    //   bgUrl: 'url(../assets/images/bg.jpg)',
       bg_img_list: [], // 背景图列表
       bg_index: 0, // 当前背景图的下标
       magic: null, // 动画效果实例对象
       ainimate_timer: null, // 动画巡航循环控制器
-      is_auto: true, // 当前页面的动画是否在巡航
       is_full_screen: false, // 当前页面是否全屏
       animate_type: ['grid', 'helix', 'small_grid', 'small_helix'], // 动画类别
       currentMode: 'Grid', // 当前的动画类别
@@ -72,48 +68,22 @@ export default {
         big: 125,
         small: 48
       },
-      bannerList: []
+      bannerList: [],
+      activities: [],
+      currentSelectedProduct: -1,
+      isSameSelectedProduct: false,
+      isAuto: true // 页面是否自动旋转
     }
   },
   // eslint-disable-next-line
     components:{QRCode,Btnlist,Alertcontent,Banner},
   created() {
-    this.img_list = [
-      // {
-      //     src:"images/products/1.jpg",
-      //     has_icon:true,
-      //     icon:"images/products/icon/1.png"
-      // },
-      // {
-      //     src:"images/products/2.png",
-      //     has_icon:false,
-      // },
-      // {
-      //     src:"images/products/3.jpg",
-      //     has_icon:true,
-      //     icon:"images/products/icon/2.png"
-      // },
-      // {
-      //     src:"images/products/4.jpg",
-      //     has_icon:false,
-      // },
-      // {
-      //     src:"images/products/5.png",
-      //     has_icon:true,
-      //     icon:"images/products/icon/3.png"
-      // },
-      // {
-      //     src:"images/products/6.png",
-      //     has_icon:true,
-      //     icon:"images/products/icon/4.png"
-      // }
-    ]
     this.bg_img_list = [
-      'images/bg.jpg',
-      'images/bg2.jpg',
-      'images/bg3.jpg',
-      'images/bg4.jpg',
-      'images/bg5.jpg'
+      'https://qiniuapp.kulchao.com//robamapp/bg/bg.jpg',
+      'https://qiniuapp.kulchao.com//robamapp/bg/bg2.jpg',
+      'https://qiniuapp.kulchao.com//robamapp/bg/bg3.jpg',
+      'https://qiniuapp.kulchao.com//robamapp/bg/bg4.jpg',
+      'https://qiniuapp.kulchao.com//robamapp/bg/bg5.jpg'
     ]
     document.body.style.backgroundImage = `url(${this.bg_img_list[0]})`
     this.red_pocket_address = 'https://www.baodu.com'
@@ -127,60 +97,48 @@ export default {
       libsApi.getCommodity(localStorage.getItem('user_phone'))
         .then(res => {
           if (res.status === 200 && res.data.status_code === 200) {
-            console.log(res.data.data)
+            // console.log(res.data.data)
+            this.activities = res.data.data.activities ? res.data.data.activities.activityinfo : []
             var imgs = res.data.data.commodities
             vm.img_list = []
+            var icons = ['',
+              'images/products/icon/5.png',
+              '',
+              'images/products/icon/4.png',
+              '',
+              '',
+              'images/products/icon/2.png']
+            var currentTime = new Date().getTime()
             for (var i = 0; i < imgs.length; i++) {
-              vm.img_list.push({
+              var item = {
                 src: imgs[i].img,
                 groupid: imgs[i].groupid,
                 has_icon: false
-              })
+              }
+              if (imgs[i].sptag !== undefined) {
+                item.has_icon = true
+                item.icon = icons[imgs[i].sptag]
+              }
+              if (imgs[i].sptag === 3) {
+                if (imgs[i].bkstarttime > currentTime || imgs[i].bkendtime < currentTime) {
+                  item.has_icon = false
+                }
+              }
+              vm.img_list.push(item)
             }
-            console.log(vm.img_list)
+            cancelAnimationFrame(vm.ainimate_timer)
             vm.red_pocket_address = res.data.data.organization.orgqrcode
             vm.init()
             vm.qrcodeScan()
             vm.bannerList = res.data.data.activities.activityinfo
           } else {
-            console.log('failed')
+            this.$router.push('login')
           }
         })
         .catch(err => {
           console.log(err)
         })
-    //   this.axios.get('/h/api/commodity?phone=' + localStorage.getItem('user_phone'))
-    //     .then(res => {
-    //       if (res.status === 200 && res.data.status_code === 200) {
-    //         console.log(res.data.data)
-    //         var imgs = res.data.data.commodities
-    //         vm.img_list = []
-    //         for (var i = 0; i < imgs.length; i++) {
-    //           vm.img_list.push({
-    //             src: imgs[i].img,
-    //             groupid: imgs[i].groupid,
-    //             has_icon: false
-    //           })
-    //         }
-    //         console.log(vm.img_list)
-    //         vm.red_pocket_address = res.data.data.organization.orgqrcode
-    //         vm.init()
-    //         vm.qrcodeScan()
-    //         vm.bannerList = res.data.data.activities.activityinfo
-    //       } else {
-    //         console.log('failed')
-    //       }
-    //       // vm.init()
-    //     })
-    //     .catch(err => {
-    //       console.log(err)
-    //     })
     }
-  },
-  mounted() {
-
-    // this.init()
-    // this.qrcodeScan()
   },
   methods: {
     set_backface_visiable() {
@@ -200,12 +158,12 @@ export default {
         localStorage.setItem('user_phone', '')
         this.$router.push('/login')
       } else if ($event.type === 'auto') {
-        if (this.is_auto) {
+        if (this.isAuto) {
           cancelAnimationFrame(this.ainimate_timer)
         } else {
           this.ainimate_timer = this.rotate_scene()
         }
-        this.is_auto = !this.is_auto
+        this.isAuto = !this.isAuto
       } else if ($event.type === 'full_screen') { // full_screen
         if (!this.is_full_screen) {
           var el = document.documentElement
@@ -260,10 +218,8 @@ export default {
             vm.animate_index = 3
             break
           case 3: // small_helix -> small_grid
-            // this.currentMode = "Small_Grid"
             vm.magic.oUlZ = -raduis * 1.3
             vm.currentMode = 'Grid'
-            // this.magic.small_grid()
             vm.magic.grid()
             vm.set_backface_visiable()
             vm.animate_index = 1
@@ -320,6 +276,159 @@ export default {
         vm.magic.oUl.style.transform = 'translate3D(0px,0px,' + vm.magic.oUlZ +
                                                     'px) rotateX(' + vm.magic.rotateX +
                                                     'deg) rotateY(' + vm.magic.rotateY + 'deg)'
+      } else if ($event.type === 'product') {
+        var vm = this
+        var icons = ['',
+          'images/products/icon/5.png',
+          '',
+          'images/products/icon/4.png',
+          '',
+          '',
+          'images/products/icon/2.png']
+        var currentTime = new Date().getTime()
+        if (vm.currentSelectedProduct === -1) {
+          libsApi.getCommodityFilter($event.value, localStorage.getItem('user_phone'))
+            .then(res => {
+              if (res.status === 200 && res.data.status_code === 200) {
+                var imgs = res.data.data.commodities
+                vm.img_list = []
+                for (var i = 0; i < imgs.length; i++) {
+                  var item = {
+                    src: imgs[i].img,
+                    groupid: imgs[i].groupid,
+                    has_icon: false
+                  }
+                  if (imgs[i].sptag !== undefined) {
+                    item.has_icon = true
+                    item.icon = icons[imgs[i].sptag]
+                  }
+                  if (imgs[i].sptag === 3) {
+                    if (imgs[i].bkstarttime > currentTime || imgs[i].bkendtime < currentTime) {
+                      item.has_icon = false
+                    }
+                  }
+                }
+                cancelAnimationFrame(vm.ainimate_timer)
+                vm.currentSelectedProduct = $event.index
+                vm.img_list.push(item)
+                vm.red_pocket_address = res.data.data.organization.orgqrcode
+                vm.init()
+                vm.qrcodeScan()
+                vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+              }
+            })
+            .catch(err => {
+              console.log(err)
+            })
+        } else if (vm.currentSelectedProduct === $event.index && vm.isSameSelectedProduct) {
+          libsApi.getCommodityFilter($event.value, localStorage.getItem('user_phone'))
+            .then(res => {
+              if (res.status === 200 && res.data.status_code === 200) {
+                var imgs = res.data.data.commodities
+                vm.img_list = []
+                for (var i = 0; i < imgs.length; i++) {
+                  var item = {
+                    src: imgs[i].img,
+                    groupid: imgs[i].groupid,
+                    has_icon: false
+                  }
+                  if (imgs[i].sptag !== undefined) {
+                    item.has_icon = true
+                    item.icon = icons[imgs[i].sptag]
+                  }
+                  if (imgs[i].sptag === 3) {
+                    if (imgs[i].bkstarttime > currentTime || imgs[i].bkendtime < currentTime) {
+                      item.has_icon = false
+                    }
+                  }
+                }
+                cancelAnimationFrame(vm.ainimate_timer)
+                vm.currentSelectedProduct = $event.index
+                vm.isSameSelectedProduct = false
+                vm.img_list.push(item)
+                vm.red_pocket_address = res.data.data.organization.orgqrcode
+                vm.init()
+                vm.qrcodeScan()
+                vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+              }
+            })
+            .catch(err => {
+              console.log(err)
+            })
+        } else if (vm.currentSelectedProduct === $event.index && !vm.isSameSelectedProduct) {
+          libsApi.getCommodity(localStorage.getItem('user_phone'))
+            .then(res => {
+              if (res.status === 200 && res.data.status_code === 200) {
+                var imgs = res.data.data.commodities
+                vm.img_list = []
+                for (var i = 0; i < imgs.length; i++) {
+                  var item = {
+                    src: imgs[i].img,
+                    groupid: imgs[i].groupid,
+                    has_icon: false
+                  }
+                  if (imgs[i].sptag !== undefined) {
+                    item.has_icon = true
+                    item.icon = icons[imgs[i].sptag]
+                  }
+                  if (imgs[i].sptag === 3) {
+                    if (imgs[i].bkstarttime > currentTime || imgs[i].bkendtime < currentTime) {
+                      item.has_icon = false
+                    }
+                  }
+                  vm.img_list.push(item)
+                }
+                cancelAnimationFrame(vm.ainimate_timer)
+                vm.currentSelectedProduct = $event.index
+                vm.isSameSelectedProduct = true
+                vm.red_pocket_address = res.data.data.organization.orgqrcode
+                vm.init()
+                vm.qrcodeScan()
+                vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+              } else {
+                // console.log('failed')
+              }
+            })
+            .catch(err => {
+              console.log(err)
+            })
+        } else if (vm.currentSelectedProduct !== $event.index) {
+          libsApi.getCommodityFilter($event.value, localStorage.getItem('user_phone'))
+            .then(res => {
+              if (res.status === 200 && res.data.status_code === 200) {
+                vm.img_list = []
+                var imgs = res.data.data.commodities
+                for (var i = 0; i < imgs.length; i++) {
+                  var item = {
+                    src: imgs[i].img,
+                    groupid: imgs[i].groupid,
+                    has_icon: false
+                  }
+                  if (imgs[i].sptag !== undefined) {
+                    item.has_icon = true
+                    item.icon = icons[imgs[i].sptag]
+                  }
+                  if (imgs[i].sptag === 3) {
+                    if (imgs[i].bkstarttime > currentTime || imgs[i].bkendtime < currentTime) {
+                      item.has_icon = false
+                    }
+                  }
+                }
+                cancelAnimationFrame(vm.ainimate_timer)
+                vm.currentSelectedProduct = $event.index
+                vm.isSameSelectedProduct = false
+                vm.img_list.push(item)
+                vm.red_pocket_address = res.data.data.organization.orgqrcode
+                vm.init()
+                vm.qrcodeScan()
+                vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+              }
+            })
+            .catch(err => {
+              console.log(err)
+            })
+          return
+        }
       }
     },
     rotate_scene() { // 页面动画自动旋转
@@ -336,13 +445,13 @@ export default {
       var screen_width = main_ele.clientWidth //* 0.8
       var screen_height = main_ele.clientHeight //* 0.8
       var img_list = this.img_list
-      var magic = null; var vm = this
+      var magic = null
+      var vm = this
       var oImg = new Image()
       oImg.src = img_list[0].src
       oImg.onload = function() {
-        // console.log(111)
-
         var oUL = document.getElementById('list').children[0]
+        oUL.innerHTML = ''
         while (oImg.width > radius / 5) {
           oImg.width = oImg.width / 1.3
           oImg.height = oImg.height / 1.3
@@ -366,9 +475,6 @@ export default {
         const animate_wrap = document.getElementById('all')
         animate_wrap.onmousedown = function(event) {
           var rotate_deg = 5
-          // if(this.currentMode === "Helix"){
-          //     rotate_deg = 5
-          // }
           if (!event) event = window.event
           var x = event.clientX
           var y = event.clientY
@@ -395,9 +501,6 @@ export default {
         }// end of document.onmousedown
         animate_wrap.ontouchstart = function(event) {
           var rotate_deg = 5
-          // if(this.currentMode === "Helix"){
-          //     rotate_deg = 5
-          // }
           if (!event) event = window.event
           var x = event.changedTouches[0].clientX
           var y = event.changedTouches[0].clientY
@@ -444,7 +547,6 @@ export default {
           this.oUl.appendChild(fragment)// 避免直接的DOM插入
         }
         Magic.prototype.grid = function() {
-          // magic.oUlZ = -radius*1.3
           for (var i = 0; i < this.liNum; i++) {
             this.aLi[i].style.display = 'block'
             this.aLi[i].index = i	// 保存排序
@@ -453,12 +555,11 @@ export default {
             this.aLi[i].z = 4 - ~~(i / 25)
             this.aLi[i].pox = (this.aLi[i].x - 2) * this.disX * 1.5 - oImg.width / 2 // 设置元素的位置（空间位置）
             this.aLi[i].poy = (this.aLi[i].y - 2) * this.disY * 1.5
-            this.aLi[i].poz = (this.aLi[i].z - 3) * this.disZ * 1.5 + 500
+            this.aLi[i].poz = (this.aLi[i].z - 3) * this.disZ * 1.5 + 800
             this.aLi[i].style.transform = 'translate3D(' + this.aLi[i].pox + 'px,' + this.aLi[i].poy + 'px,' + this.aLi[i].poz + 'px)'
           }
         }
         Magic.prototype.small_grid = function() {
-          // magic.oUlZ = -radius
           for (var i = 0; i < this.liNum; i++) {
             if (i < this.small_liNum) {
               this.aLi[i].index = i	// 保存排序
@@ -475,8 +576,6 @@ export default {
           }
         }
         Magic.prototype.helix = function() {
-          // magic.oUlZ = -radius*1.3
-          // console.log(222)
           for (var i = 0; i < this.liNum; i++) {
             this.aLi[i].style.display = 'block'
             this.aLi[i].pox = 0
@@ -499,18 +598,17 @@ export default {
           }
         }
         Magic.prototype.small_helix = function() {
-          // magic.oUlZ = -radius*0.5
           for (var i = 0; i < this.liNum; i++) {
             if (i < 80) {
               this.aLi[i].pox = 0
               if (i < 20) {
-                this.aLi[i].poy = -oImg.height * 2 - 0
+                this.aLi[i].poy = -oImg.height * 2 + 120
               } else if (i < 40) {
-                this.aLi[i].poy = -oImg.height + 50
+                this.aLi[i].poy = -oImg.height + 140
               } else if (i < 60) {
-                this.aLi[i].poy = oImg.height - 50
+                this.aLi[i].poy = oImg.height - 140
               } else {
-                this.aLi[i].poy = oImg.height * 2 + 0
+                this.aLi[i].poy = oImg.height * 2 - 120
               }
 
               this.aLi[i].rotateY = i * (360 / 20)
@@ -525,37 +623,35 @@ export default {
         magic = vm.magic
         magic.init()
         magic.grid()
-        // magic.small_helix()
+        // if (!vm.isAuto) {
+        //   cancelAnimationFrame(vm.ainimate_timer)
+        // }
         // 打开对应的弹窗
         magic.oUl.onmouseup = function(e) {
-          // 192.168.1.103:8031/api/commodity/100001?phone=15088729383
-          // localStorage.getItem("user_phone")
-          vm.axios.get(`/h/api/commodity/${e.target._my_info.groupid}?phone=` + localStorage.getItem('user_phone'))
+          libsApi.getCommodityDetail(e.target._my_info.groupid, localStorage.getItem('user_phone'))
             .then(res => {
-              // console.log(res)
               if (res.status === 200 && res.data.status_code === 200) {
-                // console.log(res.data.data)
-
                 if (e) {
                   vm.alertOption = {
                     img_index: e.target._my_info,
                     product_list: res.data.data
                   }
-                  console.log(vm.alertOption)
+                  // console.log(vm.alertOption)
                   const alert_box = document.getElementById('alert_box')
                   alert_box.style.width = '100%'
                   alert_box.style.height = '100%'
                   alert_box.style.top = '0%'
                   alert_box.style.left = '0%'
                 }
-              } else {
-                console.log('failed')
               }
             })
-          //
+            .catch(err => {
+              console.log(err)
+            })
         }
-
-        vm.rotate_scene()
+        if (vm.isAuto) {
+          vm.rotate_scene()
+        }
       } // end of img onload
     }, // end of init
     close_red_pocket() { // 关闭红包页面
@@ -582,8 +678,6 @@ export default {
     qrcodeScan() { // 生成二维码
       const text = this.red_pocket_address
       new QRCode('qrcode', {
-        // width: 200,  // 二维码宽度
-        // height: 200, // 二维码高度
         text: text
       })
     }
@@ -593,11 +687,9 @@ export default {
 </script>
 <style lang="scss">
 .show_wrap{
-
     height:100%;
     #all{
         position: relative;
-        // z-index: -1;
         width: 400%;
         height: 100%;
         transition: 1s;
@@ -628,7 +720,6 @@ export default {
                     border: 2px solid transparent;
                     box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
                     text-align: center;
-                    // color: #70caff;
                     cursor: pointer;
                     transition: 2s cubic-bezier(.94,.02,.49,.98);
                 }
@@ -670,7 +761,6 @@ export default {
                 left: 90px;
                 width: 320px;
                 height: 320px;
-                // border: 1px solid;
                 img{
                     border-radius: 5px;
                     width: 100%

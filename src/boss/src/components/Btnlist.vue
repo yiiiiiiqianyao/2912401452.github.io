@@ -8,11 +8,10 @@
         <span class="out_top_label">
           <!-- 退出 -->
         </span>
-        <!-- <div class="out_label"></div> -->
       </div>
       <div class="products_list">
         <div class="product_item btn" @click="is_list_close=!is_list_close">
-          <!-- 商品分类 -->
+          所有分类
           <img src="../assets/images/show_icons/drop_down.png" alt="">
         </div>
         <transition name="fade">
@@ -21,9 +20,9 @@
               v-for="(product,index) of products_list"
               :key="index"
               class="product_item btn"
-              @click="handle($event,{type:'product',index:index,value:product.type})"
+              @click="handle($event,{type:'product',index:index,value:product})"
             >
-              {{ product.type }}
+              {{ product }}
             </li>
           </ul>
         </transition>
@@ -35,19 +34,16 @@
           <div class="img">
             <img src="../assets/images/show_icons/style_change.png" alt="">
           </div>
-          <!-- <div>风格切换</div> -->
         </li>
         <li @click="handle($event,{type:'bg_change'})">
           <div class="img">
             <img src="../assets/images/show_icons/bg_change.png" alt="">
           </div>
-          <!-- <div>背景切换</div> -->
         </li>
         <li v-show="currentMode!='Grid'" @click="handle($event,{type:'size_change'})">
           <div class="img">
             <img src="../assets/images/show_icons/size_change.png" alt="">
           </div>
-          <!-- <div>大小切换</div> -->
         </li>
       </ul>
     </div>
@@ -57,22 +53,19 @@
           <div class="img">
             <img v-show="!is_fullscreen" src="../assets/images/show_icons/full_screen.png" alt="">
             <img v-show="is_fullscreen" src="../assets/images/show_icons/out_full_screen.png" alt="">
-            <!-- out_full_screen -->
           </div>
-          <!-- <div>全屏显示</div> -->
         </li>
-        <li @click="handle($event,{type:'auto'});is_auto=!is_auto">
+        <li @click="handle($event,{type:'auto'});">
           <div class="img">
-            <img v-show="is_auto" src="../assets/images/show_icons/auto.png" alt="">
-            <img v-show="!is_auto" src="../assets/images/show_icons/auto_close.png" alt="">
+            <img v-show="isAuto" src="../assets/images/show_icons/auto.png" alt="">
+            <img v-show="!isAuto" src="../assets/images/show_icons/auto_close.png" alt="">
           </div>
-          <!-- <div>自动巡航</div> -->
         </li>
       </ul>
     </div>
     <div class="right_bottom">
       <ul>
-        <li @click="handle($event,{type:'actives'})">
+        <li v-if="isActive" @click="handle($event,{type:'actives'})">
           <img class="btn" src="../assets/images/show_icons/actives.png" alt="">
         </li>
         <li @click="handle($event,{type:'red_pocket'})">
@@ -83,11 +76,20 @@
   </div>
 </template>
 <script>
+
+import libsApi from '@/api/urls/api'
 export default {
   props: {
     currentMode: {
       type: String,
       default: ''
+    },
+    isAuto: {
+      type: Boolean,
+      default: true
+    },
+    isActive: {
+      type: Boolean
     }
   },
   data() {
@@ -100,42 +102,35 @@ export default {
     }
   },
   created() {
-    this.products_list = [
-      {
-        type: '所有'
-      },
-      {
-        type: '油烟机'
-      },
-      {
-        type: '煤气灶'
-      },
-      {
-        type: '蒸箱'
-      },
-      {
-        type: '消毒柜'
-      }
-    ]
+    var vm = this
+    libsApi.categories(localStorage.getItem('user_phone'))
+      .then(res => {
+        if (res.data.status === 'success' && res.data.status_code === 200) {
+          vm.products_list = res.data.data
+        }
+      })
+      .catch(err => {
+        console.log(err)
+      })
   },
   methods: {
     handle(e, option) {
       var vm = this
       if (option.type === 'product') {
-        if (this.selected_index === option.index) { // same
-          e.target.style.backgroundColor = 'rgba(0,0,0,0.7)'
-        } else { // different
+        if (this.selected_index === -1) {
           e.target.style.backgroundColor = '#0084FF'
-          if (vm.selected_index >= 0) {
-            var oli = document.querySelectorAll('.btn_list .products_list ul li')[vm.selected_index]
-            oli.style.backgroundColor = 'rgba(0,0,0,0.7)'
-          }
+          this.selected_index = option.index
+        } else if (this.selected_index === option.index) {
+          e.target.style.backgroundColor = 'rgba(0,0,0,0.7)'
+          this.selected_index = -1
+        } else {
+          var oli = document.querySelectorAll('.btn_list .products_list ul li')[vm.selected_index]
+          oli.style.backgroundColor = 'rgba(0,0,0,0.7)'
+          this.selected_index = option.index
+          e.target.style.backgroundColor = '#0084FF'
         }
-        this.selected_index = option.index
       }
-      this.$emit('sun_event', {
-        type: option.type
-      })
+      this.$emit('sun_event', option)
     }
   }
 }
@@ -168,7 +163,6 @@ export default {
             font-size: 16px;
             font-family:PingFangSC-Medium;
             font-weight:600;
-            // color:rgba(0,0,0,1);
             color: #FFFFFF;
         }
     }
@@ -215,7 +209,6 @@ export default {
                 background:rgba(0,0,0,0.7);
                 margin-bottom: 10px;
             }
-            // color: #000000;
             color: #FFFFFF;
             font-size: 14px;
             font-weight: 600;
@@ -233,7 +226,6 @@ export default {
         padding: 0;
         margin: 0;
         li{
-            // color: #000000;
             color: #FFFFFF;
             font-size: 14px;
             font-weight: 600;

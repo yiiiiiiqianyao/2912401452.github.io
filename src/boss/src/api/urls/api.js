@@ -1,7 +1,4 @@
-import ajax from '../../utils/http'
-// import getUrlParam from '../../assets/commen/getUrlParam'
-
-// 发送验证码
+import ajax from '@/api/http'
 const libsApi = {
   getCode(phoneNumber) {
     return ajax({
@@ -22,7 +19,7 @@ const libsApi = {
       }
     })
   },
-  getCommodity(phoneNumber) {
+  getCommodity(phoneNumber) { // 获取商品列表
     return ajax({
       method: 'get',
       url: 'api/commodity',
@@ -31,33 +28,32 @@ const libsApi = {
       }
     })
   },
-  sendCode(phoneNmuber) {
+  getCommodityDetail(groupId, phoneNumber) { // 获取指定商品的详细信息
     return ajax({
       method: 'get',
-      url: 'api/sms_code',
+      url: 'api/commodity/' + groupId,
       data: {
-        phone: phoneNmuber
+        phone: phoneNumber
       }
     })
   },
-  postAnswers(application_id, phone, answers, st_time, source_type) {
+  getCommodityFilter(spxxfl2, phoneNumber) {
     return ajax({
-      method: 'post',
-      url: 'api/answers',
+      method: 'get',
+      url: 'api/commodity',
       data: {
-        application_id: application_id,
-        phone: phone,
-        answers: answers,
-        st_time: st_time,
-        source_type: source_type
+        phone: phoneNumber,
+        spxxfl2: spxxfl2
       }
     })
   },
-
-  getCurrentTime() {
+  categories(phoneNumber) { // 获取商品分类列表
     return ajax({
       method: 'get',
-      url: 'api/current_time'
+      url: 'api/commodity/categories',
+      data: {
+        phone: phoneNumber
+      }
     })
   }
 }

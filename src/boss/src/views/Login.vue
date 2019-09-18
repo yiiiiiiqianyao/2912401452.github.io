@@ -53,7 +53,7 @@ export default {
   },
   created() {
     if (localStorage.getItem('user_phone')) {
-      console.log('has')
+      // console.log('has')
       this.$router.push('/')
     }
   },
@@ -79,25 +79,6 @@ export default {
         this.is_checked = true
       }
     },
-    checkCode() {
-      var vm = this
-      this.axios.post('/h/api/verify/code/check', {
-        phone: this.phoneNumber,
-        code: this.checkNumber
-      })
-        .then(res => {
-          if (res.status === 200 && res.data.status_code === 200) {
-            // console.log(res)/
-            localStorage.setItem('user_phone', this.phoneNumber)
-            vm.$router.push('/')
-          } else {
-            console.log('failed')
-          }
-        })
-        .catch(err => {
-          console.log(err)
-        })
-    },
     login() { // 用户登录
       if (JSON.stringify(this.phoneNumber).length < 11) {
         this.showwarning('phone', '请输入正确的手机号')
@@ -109,16 +90,14 @@ export default {
       }
 
       if (this.is_phone && this.is_checked) {
-        // this.checkCode()
         var vm = this
         libsApi.checkCode(this.phoneNumber, this.checkNumber)
           .then(res => {
             if (res.status === 200 && res.data.status_code === 200) {
-            //   console.log(res)
               localStorage.setItem('user_phone', this.phoneNumber)
               vm.$router.push('/')
             } else {
-              console.log('failed')
+              // console.log('failed')
             }
           })
           .catch(err => { console.log(err) })
@@ -143,19 +122,6 @@ export default {
           window.clearInterval(timer)
         }
       }, 1000)
-    },
-    getCode() {
-      this.axios.get('/h/api/verify/code?phone=' + this.phoneNumber)
-        .then(res => {
-          if (res.status === 200 && res.data.status_code === 200) {
-            console.log(res.data)
-          } else {
-            console.log('failed')
-          }
-        })
-        .catch(err => {
-          console.log(err)
-        })
     },
     showwarning(type, info) {
       var flag = this
