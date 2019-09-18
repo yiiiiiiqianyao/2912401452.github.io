@@ -112,6 +112,20 @@ export default {
       .catch(err => {
         console.log(err)
       })
+
+    window.onresize = function() {
+      if (!checkFull()) {
+        // console.log(111)
+        vm.is_fullscreen = !vm.is_fullscreen
+        // 退出全屏后要执行的动作
+        // vm.$emit('Fullscreen', false)
+      }
+    }
+    function checkFull() {
+      var isFull = window.fullscreenEnabled || window.fullScreen || document.webkitIsFullScreen || document.msFullscreenEnabled
+      if (isFull === undefined) isFull = false
+      return isFull
+    }
   },
   methods: {
     handle(e, option) {
@@ -133,6 +147,7 @@ export default {
       this.$emit('sun_event', option)
     }
   }
+
 }
 </script>
 <style lang="scss" scoped>

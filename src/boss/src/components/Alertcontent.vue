@@ -51,23 +51,23 @@
                   :style="{ border:'4px solid '+(index==curret_product_index?'#1890FF':'rgba(0,63,103,1)') }"
                   @click="(curret_product_index==index)?(curret_product_index):(curret_product_index=index)"
                 >
-                  <span>{{ item.specname }}</span>
+                  <span>{{ item.specname===null?'未知型号':item.specname }}</span>
                 </li>
               </ul>
-              <div v-show="is_address_box" id="address_box" class="address_box">
+              <div v-show="isAddressBox" id="address_box" class="address_box">
                 <img
                   class="close"
                   src="../assets/images/close.png"
                   width="16px"
                   height="16px"
                   alt=""
-                  @click="is_address_box=false"
+                  @click="isAddressBox=false"
                 >
                 <div id="address" class="address" />
                 <div class="text">微信扫码购买</div>
                 <div class="angle" />
               </div>
-              <button class="btn" @click="phone_shop">手机购买</button>
+              <button class="btn" @click="phoneShop">手机购买</button>
             </div>
           </div>
         </div>
@@ -104,8 +104,8 @@ export default {
       len: 116,
       current_media_index: 0, // 弹出框当前媒体( video/image )序号
       slider_content_pos: 0, // 视频列表位置
-      selected_model_index: -1, // 当前选中的产品型号序号
-      is_address_box: false, // 通过手机购买选中模型的二维码
+      // selected_model_index: -1, // 当前选中的产品型号序号
+      isAddressBox: false, // 通过手机购买选中模型的二维码
       is_hidden: true,
       qrcode: null, // 生成二维码的实例对象
       curret_product_index: 0,
@@ -122,10 +122,20 @@ export default {
   watch: {
     alertOption(newVal, oldVal) {
       document.getElementById('slider_content').style.width = this.alertOption.product_list[this.curret_product_index].images.length * this.len + 'px'
+    },
+    curret_product_index(newVal, oldVal) {
+      this.curret_product_list_index = 0
+      document.getElementById('slider_content').style.width = this.alertOption.product_list[newVal].images.length * this.len + 'px'
     }
+  },
+  mounted() {
+    document.getElementById('slider_content').style.width = this.alertOption.product_list[this.curret_product_index].images.length * this.len + 'px'
   },
   methods: {
     quit() { // 关闭弹窗
+      // this.selected_model_index = -1
+      this.isAddressBox = false
+      // this.curret_product_index = 0
       this.$emit('close_alert')
     },
     slider_left() { // 视频列表左移
@@ -151,9 +161,9 @@ export default {
     change_media(key) {
       this.curret_product_list_index = key
     },
-    phone_shop() { // 用户点击手机购买按钮
+    phoneShop() { // 用户点击手机购买按钮
       this.init_address(this.alertOption.product_list[this.curret_product_index].spxxqrcode)
-      this.is_address_box = true
+      this.isAddressBox = true
     },
     init_address(text) { // 生成二维码
       if (!this.qrcode) {
@@ -284,7 +294,6 @@ export default {
                          position: absolute;
                          top: 0;
                          left: 0;
-                        //  width: 1000px;
                          height: 96px;
                          transition: 0.5s;
                          img{

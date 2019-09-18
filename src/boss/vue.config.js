@@ -74,6 +74,7 @@ module.exports = {
     // proxy: 'http://192.168.1.103:8031' // 配置跨域处理,只有一个代理
     proxy: {
       '/h': {
+        // ws: false,
         target: process.env.VUE_APP_API_BASE_URL, // 需要请求的地址
         changeOrigin: true, // 是否跨域
         pathRewrite: {

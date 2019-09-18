@@ -21,7 +21,7 @@
       </div>
     </div>
     <div id="alert_box">
-      <Alertcontent :alert-option="alertOption" @close_alert="close_alert" />
+      <Alertcontent v-if="isAlertExist" :alert-option="alertOption" @close_alert="close_alert" />
     </div>
     <div id="banner_box">
       <Banner :banner-list="bannerList" @close_banner="close_banner" />
@@ -46,6 +46,7 @@ export default {
       animate_type: ['grid', 'helix', 'small_grid', 'small_helix'], // 动画类别
       currentMode: 'Grid', // 当前的动画类别
       animate_index: 0, // 当前动画编号
+      qrcode: null,
       red_pocket_address: '', // 当前页面红包二维码的地址
       img_list: [], // 加载的商品列表信息
       alertOption: { // 弹出框的信息对象
@@ -64,6 +65,7 @@ export default {
           }
         ]
       },
+      isAlertExist: false,
       size: { // 动画元素的尺寸
         big: 125,
         small: 48
@@ -153,6 +155,80 @@ export default {
         element.style.backfaceVisibility = 'hidden'
       })
     },
+    changeStyle() {
+      const vm = this
+      const raduis = document.getElementById('main').clientWidth
+      switch (vm.animate_index) {
+        case 0: // grid -> helix
+          vm.magic.oUlZ = -raduis * 1.3
+          vm.currentMode = 'Helix'
+          vm.magic.helix()
+          vm.set_backface_unvisiablb()
+          vm.animate_index = 1
+          break
+        case 1: // helix -> grid
+          vm.magic.oUlZ = -raduis * 1.3
+          vm.currentMode = 'Grid'
+          vm.magic.grid()
+          vm.set_backface_visiable()
+          vm.animate_index = 0
+          break
+        case 2: // small_grid -> small_helix
+          vm.magic.oUlZ = -raduis * 0.8
+          vm.currentMode = 'Small_Helix'
+          vm.magic.small_helix()
+          vm.set_backface_unvisiablb()
+          vm.animate_index = 3
+          break
+        case 3: // small_helix -> small_grid
+          vm.magic.oUlZ = -raduis * 1.3
+          vm.currentMode = 'Grid'
+          vm.magic.grid()
+          vm.set_backface_visiable()
+          vm.animate_index = 1
+          break
+      }
+      vm.magic.oUl.style.transform = 'translate3D(0px,0px,' + vm.magic.oUlZ +
+                                                    'px) rotateX(' + vm.magic.rotateX +
+                                                    'deg) rotateY(' + vm.magic.rotateY + 'deg)'
+    },
+    changeSize() {
+      const vm = this
+      const raduis = document.getElementById('main').clientWidth
+      switch (vm.animate_index) {
+        case 0: // grid -> small_grid
+          vm.magic.oUlZ = -raduis * 0.8
+          vm.currentMode = 'Small_Grid'
+          vm.magic.small_grid()
+          vm.set_backface_visiable()
+          vm.animate_index = 2
+          break
+        case 1: // helix -> small_helix
+          // vm.magic.oUlZ = -raduis * 0.8
+          vm.currentMode = 'Small_Helix'
+          vm.magic.small_helix()
+          vm.set_backface_unvisiablb()
+          vm.animate_index = 3
+          break
+        case 2: // small_grid -> grid
+          vm.magic.oUlZ = -raduis * 1.3
+          vm.currentMode = 'Grid'
+          vm.magic.grid()
+          vm.set_backface_visiable()
+          vm.animate_index = 0
+          break
+        case 3: // small_helix -> helix
+          vm.magic.oUlZ = -raduis * 1.3
+          vm.currentMode = 'Helix'
+          vm.magic.helix()
+          vm.set_backface_unvisiablb()
+          vm.animate_index = 1
+          break
+      }
+      vm.magic.oUl.style.transform = 'translate3D(0px,0px,' + vm.magic.oUlZ +
+                                                    'px) rotateX(' + vm.magic.rotateX +
+                                                    'deg) rotateY(' + vm.magic.rotateY + 'deg)'
+    },
     sun_event($event) { // 接受来自边缘按钮的动作
       if ($event.type === 'back') {
         localStorage.setItem('user_phone', '')
@@ -181,9 +257,6 @@ export default {
           } else if (document.msExitFullscreen) {
             document.msExitFullscreen()
           }
-          // if(typeof cfs != "undefined" && cfs) {
-          //     cfs.call(el);
-          // }
         }
         this.is_full_screen = !this.is_full_screen
       } else if ($event.type === 'bg_change') {
@@ -193,41 +266,7 @@ export default {
         }
         document.body.style.backgroundImage = `url(${this.bg_img_list[this.bg_index]})`
       } else if ($event.type === 'style_change') {
-        const vm = this
-        const raduis = document.getElementById('main').clientWidth
-        switch (vm.animate_index) {
-          case 0: // grid -> helix
-            vm.magic.oUlZ = -raduis * 1.3
-            vm.currentMode = 'Helix'
-            vm.magic.helix()
-            vm.set_backface_unvisiablb()
-            vm.animate_index = 1
-            break
-          case 1: // helix -> grid
-            vm.magic.oUlZ = -raduis * 1.3
-            vm.currentMode = 'Grid'
-            vm.magic.grid()
-            vm.set_backface_visiable()
-            vm.animate_index = 0
-            break
-          case 2: // small_grid -> small_helix
-            vm.magic.oUlZ = -raduis * 0.8
-            vm.currentMode = 'Small_Helix'
-            vm.magic.small_helix()
-            vm.set_backface_unvisiablb()
-            vm.animate_index = 3
-            break
-          case 3: // small_helix -> small_grid
-            vm.magic.oUlZ = -raduis * 1.3
-            vm.currentMode = 'Grid'
-            vm.magic.grid()
-            vm.set_backface_visiable()
-            vm.animate_index = 1
-            break
-        }
-        vm.magic.oUl.style.transform = 'translate3D(0px,0px,' + vm.magic.oUlZ +
-                                                    'px) rotateX(' + vm.magic.rotateX +
-                                                    'deg) rotateY(' + vm.magic.rotateY + 'deg)'
+        this.changeStyle()
       } else if ($event.type === 'actives') {
         const wrap = document.getElementById('banner_box')
         wrap.style.top = '0'
@@ -241,41 +280,7 @@ export default {
         wrap.style.width = '100%'
         wrap.style.height = '100%'
       } else if ($event.type === 'size_change') {
-        const vm = this
-        const raduis = document.getElementById('main').clientWidth
-        switch (vm.animate_index) {
-          case 0: // grid -> small_grid
-            vm.magic.oUlZ = -raduis * 0.8
-            vm.currentMode = 'Small_Grid'
-            vm.magic.small_grid()
-            vm.set_backface_visiable()
-            vm.animate_index = 2
-            break
-          case 1: // helix -> small_helix
-            vm.magic.oUlZ = -raduis * 0.8
-            vm.currentMode = 'Small_Helix'
-            vm.magic.small_helix()
-            vm.set_backface_unvisiablb()
-            vm.animate_index = 3
-            break
-          case 2: // small_grid -> grid
-            vm.magic.oUlZ = -raduis * 1.3
-            vm.currentMode = 'Grid'
-            vm.magic.grid()
-            vm.set_backface_visiable()
-            vm.animate_index = 0
-            break
-          case 3: // small_helix -> helix
-            vm.magic.oUlZ = -raduis * 1.3
-            vm.currentMode = 'Helix'
-            vm.magic.helix()
-            vm.set_backface_unvisiablb()
-            vm.animate_index = 1
-            break
-        }
-        vm.magic.oUl.style.transform = 'translate3D(0px,0px,' + vm.magic.oUlZ +
-                                                    'px) rotateX(' + vm.magic.rotateX +
-                                                    'deg) rotateY(' + vm.magic.rotateY + 'deg)'
+        this.changeSize()
       } else if ($event.type === 'product') {
         var vm = this
         var icons = ['',
@@ -307,14 +312,16 @@ export default {
                       item.has_icon = false
                     }
                   }
+                  vm.img_list.push(item)
                 }
                 cancelAnimationFrame(vm.ainimate_timer)
                 vm.currentSelectedProduct = $event.index
-                vm.img_list.push(item)
                 vm.red_pocket_address = res.data.data.organization.orgqrcode
                 vm.init()
                 vm.qrcodeScan()
                 vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+                // console.log(vm.currentMode, vm.animate_index)
+                // vm.changeStyle()
               }
             })
             .catch(err => {
@@ -341,15 +348,17 @@ export default {
                       item.has_icon = false
                     }
                   }
+                  vm.img_list.push(item)
                 }
                 cancelAnimationFrame(vm.ainimate_timer)
                 vm.currentSelectedProduct = $event.index
                 vm.isSameSelectedProduct = false
-                vm.img_list.push(item)
                 vm.red_pocket_address = res.data.data.organization.orgqrcode
                 vm.init()
                 vm.qrcodeScan()
                 vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+                // console.log(vm.currentMode, vm.animate_index)
+                // vm.changeStyle()
               }
             })
             .catch(err => {
@@ -385,6 +394,8 @@ export default {
                 vm.init()
                 vm.qrcodeScan()
                 vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+                // console.log(vm.currentMode, vm.animate_index)
+                // vm.changeStyle()
               } else {
                 // console.log('failed')
               }
@@ -413,15 +424,17 @@ export default {
                       item.has_icon = false
                     }
                   }
+                  vm.img_list.push(item)
                 }
                 cancelAnimationFrame(vm.ainimate_timer)
                 vm.currentSelectedProduct = $event.index
                 vm.isSameSelectedProduct = false
-                vm.img_list.push(item)
                 vm.red_pocket_address = res.data.data.organization.orgqrcode
                 vm.init()
                 vm.qrcodeScan()
                 vm.bannerList = res.data.data.activities === null ? [] : res.data.data.activities.activityinfo
+                // console.log(vm.currentMode, vm.animate_index)
+                // vm.changeStyle()
               }
             })
             .catch(err => {
@@ -610,10 +623,9 @@ export default {
               } else {
                 this.aLi[i].poy = oImg.height * 2 - 120
               }
-
               this.aLi[i].rotateY = i * (360 / 20)
 
-              this.aLi[i].style.transform = `rotateY(${this.aLi[i].rotateY}deg) translate3D(${this.aLi[i].pox}px,${this.aLi[i].poy}px,${radius * 0.8}px)`
+              this.aLi[i].style.transform = `rotateY(${this.aLi[i].rotateY}deg) translate3D(${this.aLi[i].pox}px,${this.aLi[i].poy}px,${radius}px)`
             } else {
               this.aLi[i].style.display = 'none'
             }
@@ -622,10 +634,16 @@ export default {
         vm.magic = new Magic()
         magic = vm.magic
         magic.init()
-        magic.grid()
-        // if (!vm.isAuto) {
-        //   cancelAnimationFrame(vm.ainimate_timer)
-        // }
+
+        if (vm.currentMode === 'Grid') {
+          magic.grid()
+        } else if (vm.currentMode === 'Small_grid') {
+          magic.small_grid()
+        } else if (vm.currentMode === 'Small_Helix') {
+          magic.small_helix()
+        } else {
+          magic.helix()
+        }
         // 打开对应的弹窗
         magic.oUl.onmouseup = function(e) {
           libsApi.getCommodityDetail(e.target._my_info.groupid, localStorage.getItem('user_phone'))
@@ -637,6 +655,7 @@ export default {
                     product_list: res.data.data
                   }
                   // console.log(vm.alertOption)
+                  vm.isAlertExist = true
                   const alert_box = document.getElementById('alert_box')
                   alert_box.style.width = '100%'
                   alert_box.style.height = '100%'
@@ -667,6 +686,7 @@ export default {
       alert_box.style.height = '0%'
       alert_box.style.top = '50%'
       alert_box.style.left = '50%'
+      this.isAlertExist = false
     },
     close_banner() { // 关闭轮播
       const alert_box = document.getElementById('banner_box')
@@ -677,7 +697,12 @@ export default {
     },
     qrcodeScan() { // 生成二维码
       const text = this.red_pocket_address
-      new QRCode('qrcode', {
+      if (this.qrcode !== null) {
+        this.qrcode.clear()
+        this.qrcode.makeCode(text)
+        return
+      }
+      this.qrcode = new QRCode('qrcode', {
         text: text
       })
     }
