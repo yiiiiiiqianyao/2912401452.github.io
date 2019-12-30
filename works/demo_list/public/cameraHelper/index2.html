@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <script src="../src/libs/CameraHelper.js"></script>
+    <script src="../src/libs/TransformControls.js"></script>
+
+    <script src="../src/common/math.js"></script>
+    <script src="../src/common/utils.js"></script>
+
+    <script src="../src/libs/popmotion.js"></script>
+
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+        #controlwrwap{
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            margin: 10px;
+            border: 1px solid;
+            border-radius: 10px;
+            padding: 5px;
+            height: 200px;
+        }
+        #subView{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 300px;
+            height: 240px;
+            margin: 10px;
+            border: 1px solid;
+            z-index: -1;
+        }
+        #pointPlane {
+            position: absolute;
+            top: 250px;
+            left: 0;
+            width: 300px;
+            height: 300px;
+            margin: 10px;
+            border: 1px solid;
+            z-index: -1;
+            text-align: center;
+            background-color: royalblue;
+        }
+        #pointPlane ul{
+            list-style: none;
+        }
+        #pointPlane input{
+            width: 50px;
+        }
+        #pointPlane .trigger{
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 16px;
+            height: 16px;
+            font-size: 12px;
+            background-color: red;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 19px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #pointPlane .trigger:hover {
+            transform: scale(1.1);
+        }
+        #subView .trigger{
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 16px;
+            height: 16px;
+            font-size: 12px;
+            background-color: red;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 19px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #subView .trigger:hover {
+            transform: scale(1.1);
+        }
+        .btn{
+            border: 1px solid;
+            margin: 5px;
+            border-radius: 10px;
+            padding: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="Stats-output"></div>
+    <div id="WebGL-output"></div>
+    <div id="controlwrwap">
+        <div class="btn" onclick="changeMode('translate')">translate</div>
+        <div class="btn" onclick="changeMode('rotate')">rotate</div>
+        <div class="btn" onclick="addPoint()">add point</div>
+        <div class="btn" onclick="deleteSelectedPoint()">deleteSelectedPoint</div>
+        <div class="btn" onclick="startCamAnim()">startCamAnim</div>
+    </div>
+    <div id="pointPlane"></div>
+    <div id="subView">
+        <div class="trigger" onclick="closeSubView()"> X </div>
+    </div>
+</body>
+<script>
+    let { tween, easing } = popmotion
+    let isCamAnim = false
+    let scene = null, camera = null, renderer = null, domElement
+    let subScene = null, 
+    subRender = null, 
+    subCamera = null, // 子视图的相机
+    subRenderControl = null
+    let currentSubCamera = null, subController = null
+    let mode = 'translate'
+    let canBeSelectedMeshes = []
+    let currentTransformController = null
+    let currentCameraPoint = null
+   
+    let subView = document.getElementById('subView') // 子视图
+    let pointPlane = document.getElementById('pointPlane') // 对应点位的详细信息
+
+    let transformControls = null, controller, controllerSaved = false
+    
+    let normalMaterial = new THREE.MeshNormalMaterial()
+    let commonCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
+    let helperCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 0.2)
+    let commonSphere = new THREE.Mesh(new THREE.SphereBufferGeometry(0.5, 16, 16), normalMaterial)
+    let commonTargetPoint = new THREE.Mesh(new THREE.SphereBufferGeometry(0.4, 16, 16), new THREE.MeshBasicMaterial({color: 0xff0000}))
+
+    let cameraData = [ // 用来表示相机点位的数据
+        {
+            position: new THREE.Vector3(15, 15, 15),
+            target: new THREE.Vector3(3, 3, 3)
+        },
+        {
+            position: new THREE.Vector3(-15, 15, -15),
+            target: new THREE.Vector3(-3, 3, -3)
+        },
+        {
+            position: new THREE.Vector3(15, 15, -15),
+            target: new THREE.Vector3(3, 3, -3)
+        },
+        {
+            position: new THREE.Vector3(15, -15, -15),
+            target: new THREE.Vector3(3, -3, -3)
+        }
+    ]
+    let points = []         // 表示相机点位的小球数组
+    let lines = []          // 表示相机点位的小球之间的连接线段
+    let targetPoints = []   // 表示相机对应的视点小球
+    let targetLines = []    // 视线数组
+
+    window.onload = function(){
+        scene = new THREE.Scene()
+        subScene = new THREE.Scene()
+        camera = commonCamera.clone()
+        subCamera = camera  // 将主场景中的相机默认作为子视图相机的默认视点
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        renderer.setClearColor(new THREE.Color(0xEEEEEE))
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        
+        domElement = renderer.domElement
+
+        controller = new THREE.OrbitControls( camera, domElement )
+
+        transformControls = new THREE.TransformControls(camera, domElement)
+        scene.add(transformControls)
+
+        camera.position.x = -50
+        camera.position.y = 50
+        camera.position.z = 50
+        camera.lookAt(scene.position)
+
+        scene.add(new THREE.Mesh(new THREE.SphereBufferGeometry(2.5, 16, 16), normalMaterial))
+
+        initCameraHelperSys(cameraData) // 初始化相机辅助系统
+
+        domElement.onmousedown = function(e){
+            
+            let coords = tranformMouseCoord(e.clientX, e.clientY, domElement)
+            let intersects = getSelectedMeshes(coords, camera, canBeSelectedMeshes)
+           
+            if(intersects.length > 0){
+                let item = intersects[0].object // 用户当前选中的对象
+                let selectedCameraPoint = item.userData.pointType == 'camera'?item:item.userData.parent // 当前选中相机点位
+                let selectedSubCamera = selectedCameraPoint.userData.camera // 当前相机点位的子相机
+                let selectedHelper = selectedCameraPoint.userData.helper
+
+                if(currentCameraPoint == null){ // 之前未选中相机点位
+                    selectPoint(selectedCameraPoint, item)
+                    // currentCameraPoint = selectedCameraPoint // 赋值当前选中相机点位
+                    // subCamera = selectedSubCamera
+                    // subCamera.far = 100
+                    // subCamera.updateProjectionMatrix()  // 更新摄像机投影矩阵
+                    // selectedHelper.update()
+                    // subView.style.zIndex = 1
+                    // transformControls.attach(item)
+                    // controller.enabled = false
+
+                    controller.saveState()
+                    controllerSaved = true
+                }else if(selectedCameraPoint.userData.index == currentCameraPoint.userData.index){ // 再次选中同一个相机
+                    // if(controllerSaved){
+                    //     controller.reset()
+                    //     controllerSaved = false
+                    // }
+                    releasePoint(selectedCameraPoint)
+                    // selectedSubCamera.far = 0.2
+                    // selectedSubCamera.updateProjectionMatrix()
+                    // selectedHelper.update()
+                    // subView.style.zIndex = -1
+
+                    // transformControls.detach()
+                    // currentCameraPoint = null
+                    // if(controllerSaved){
+                    //     controller.reset()
+                    //     controllerSaved = false
+                    // }
+                    // controller.enabled = true
+                  
+                }else{  // 选中不同的相机
+                    // currentCameraPoint.userData.camera.far = 0.2
+                    // currentCameraPoint.userData.camera.updateProjectionMatrix()
+                    // currentCameraPoint.userData.helper.update()
+
+                    // currentCameraPoint = selectedCameraPoint    
+
+                    // subCamera = currentCameraPoint.userData.camera
+                    // selectedSubCamera.far = 100
+                    // selectedSubCamera.updateProjectionMatrix()
+                    // selectedHelper.update()
+                    // subView.style.zIndex = 1
+
+                    // transformControls.detach()
+                    // transformControls.attach(item)
+
+                    releasePoint(currentCameraPoint)
+                    selectPoint(selectedCameraPoint, item)
+                }
+            }else {
+                if(currentCameraPoint !== null){
+                    domElement.onmousemove = function(){
+
+                        currentCameraPoint.userData.camera.position.copy(currentCameraPoint.position)
+                        currentCameraPoint.userData.camera.rotation.copy(currentCameraPoint.rotation)
+                        cameraPointMove(currentCameraPoint)
+                        
+                        domElement.onmouseup = function(ue){
+                            domElement.onmousemove = null
+                            if(currentCameraPoint !== null) {
+                                updatePointPane( currentCameraPoint )  // 更新信息面板的信息
+                                isCircle() // 判断是否有循环存在
+                            }
+                        } // end of mouseup
+                    }
+                }
+            }
+            
+            
+        }
+
+        var grid = new THREE.GridHelper( 50, 50, 0x444444, 0x888888 )
+        scene.add( grid )
+        
+        var axesHelper = new THREE.AxesHelper( 5 )
+        scene.add( axesHelper )
+
+        document.getElementById('WebGL-output').appendChild(domElement)
+        
+        renderScene()
+        initSubRender()
+
+        window.onresize = onResize
+    }
+
+    function isCircle() { // 0.5
+        // 在一个相机位移动画中至多有一个循环
+        // 循环的点位由末尾的相机点位控制
+        // 判断末尾的相机点位和其他点位之间的距离（若两个点位的距离小于1，则认为这两个点位重叠，此时末尾点位的位置将与重叠的点位认为是同一个点位）
+        let lastPoint = points[points.length - 1]
+        let arr = points.filter(p => p.uuid !== lastPoint.uuid)
+        
+        for(let i = 0;i < arr.length;i++) {
+            let dis = arr[i].position.distanceTo(lastPoint.position)
+            if(dis < 1) {
+                arr[i].material = new THREE.MeshBasicMaterial({color:new THREE.Color(0x00ff00)})
+                return // 在判断的过程中最多只需要一个点被循环使用就可以
+            }
+        }
+    }
+
+    function startCamAnim() { // 根据当前的相机点位数据来进行相机的动画 (当前按钮启动)
+        if(currentCameraPoint !== null) { // 如果当前有选中的相机点位，那么将选中状态取消
+            releasePoint(currentCameraPoint)
+        }
+        let point = points[0]
+        isCamAnim = true    // 状态信息，用于表示当前是否处于相机动画中
+        controller.saveState() // 记录当前编辑视角下相机的相关信息
+        controller.enabled = false // 关闭编辑状态下的相机控制器
+        
+        camera.position.copy(point.position) // 编辑状态的相机切换到点位上的相机状态
+        camera.userData.target = new THREE.Vector3().copy(point.userData.targetPoint.position)
+        camera.lookAt( point.userData.targetPoint.position)
+
+        if(point.userData.nextPoint == null) { // 如果只有一个相机点位的话并不会进入动画，而是直接结束
+            isCamAnim = false
+            controller.reset()
+            controller.enabled = true
+            return
+        }
+
+        let timer = null
+        pointchange(point.userData.nextPoint) // 启动相机点位移动的动画
+        function pointchange(point) {
+            timer = tween({
+                from: {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z,
+                    tx: camera.userData.target.x,
+                    ty: camera.userData.target.y,
+                    tz: camera.userData.target.z
+                },
+                to: {
+                    x: point.position.x,     // 下一个点位的位置信息
+                    y: point.position.y,
+                    z: point.position.z,
+                    tx: point.userData.targetPoint.position.x,  // 下一个点位的目标朝向信息
+                    ty: point.userData.targetPoint.position.y,
+                    tz: point.userData.targetPoint.position.z
+                },
+                ease: easing.easeInOut,
+                duration: 2000
+            }).start({
+                update: (o) => {
+                    camera.position.set(o.x, o.y, o.z) 
+                    camera.userData.target.set(o.tx, o.ty, o.tz)
+                    camera.lookAt(o.tx, o.ty, o.tz)
+                },
+                complete: () => {
+                    if(point.userData.nextPoint !== null) {
+                        pointchange(point.userData.nextPoint) // 动画衔接到下一个相机点位
+                    }else {
+                        isCamAnim = false
+                        controller.reset()
+                        controller.enabled = true
+                        if(timer !== null){
+                            timer.stop()
+                            timer = null
+                        }
+                        return
+                    }
+                }
+            })
+        } // end of pointchange
+        
+    }
+
+    function initCameraHelperSys(data) { // 初始化相机点位辅助系统的初始点位
+        for(let i = 0;i < data.length;i++) {
+            initPoint(data[i].position, data[i].target)
+        }
+
+        initPointsLines() // 为当前的相机点位初始化连接线
+    }
+
+    function deleteSelectedPoint() { // 删除当前选中的相机点位
+        if(currentCameraPoint == null) {
+            console.log('Sorry! Please select a camera point first!')
+            return
+        }
+        if(points.length == 1) {
+            console.log('Sorry! Scene need at least one camera point!')
+            return
+        }
+        if(currentCameraPoint.userData.isHeadPoint){
+            console.log('Sorry! You can\' delete the first camera point!')
+            return
+        }
+        let currentIndex = currentCameraPoint.userData.index - 1
+        let pointBefore = points[currentIndex - 1] == undefined ? null : points[currentIndex - 1]
+        let pointAfter = points[currentIndex + 1] == undefined ? null : points[currentIndex + 1]
+
+        transformControls.detach()
+        controller.reset()
+        controller.enabled = true
+        // subView.style.zIndex = -1
+        closeSubView()      // 隐藏子视图
+        closePointPlane()   // 隐藏信息面板
+
+        disposeCameraPoint(currentCameraPoint) // 释放当前的相机点位
+        if(pointBefore == null) { // 当前选中的是第一个相机点位
+            pointAfter.userData.lastPoint = null
+            pointAfter.userData.lastLine = null
+        }else if(pointAfter == null) { // 当前选中的是最后一个相机点位
+            pointBefore.userData.nextPoint = null
+            pointBefore.userData.nextLine = null
+        }else { // 当前选中的是处于中间位置的相机点位
+            let line = generateLine([ // 为两个点之间创建新的链接线段
+                new THREE.Vector3().copy(pointBefore.position), 
+                new THREE.Vector3().copy(pointAfter.position) 
+            ], new THREE.Color( 0x0000ff ), true)
+            pointBefore.userData.nextLine = line
+            pointBefore.userData.nextPoint = pointAfter
+            pointAfter.userData.lastLine = line
+            pointAfter.userData.lastPoint = pointBefore
+
+        }
+        currentCameraPoint = null // 取消当前选中状态
+        reOrderIndex()
+    }
+
+    function reOrderIndex() { // 从新开始排列相机的点位 index (场景中至少会存在一个相机，所以从第一个点位开始排列相机点位)
+        let point = points[0]
+        let index = 1
+        point.userData.index = index
+        point.userData.targetPoint.userData.index = index
+        while(point.userData.nextPoint !== null) {
+            point = point.userData.nextPoint
+            index++
+            point.userData.index = index
+            point.userData.targetPoint.userData.index = index
+        }
+    }
+
+    function disposeCameraPoint(point) { // 当从场景中删除一个相机点位的时候需要做的操作
+        points = points.filter(p => p.uuid !== point.uuid)  // 相机点位数组更新
+        canBeSelectedMeshes = canBeSelectedMeshes.filter( p => p.uuid !== point.uuid && p.uuid !== point.userData.targetPoint.uuid) // 从可选中列表中移除相应对象
+        targetPoints = targetPoints.filter( tp => tp.uuid !== point.userData.targetPoint.uuid ) // 目标点数组更新
+        targetLines = targetLines.filter( tl => tl.uuid !== point.userData.targetLine.uuid )    // 目标点辅助线数组更新
+        if(point.userData.lastLine !== null) scene.remove(point.userData.lastLine)
+        if(point.userData.nextLine !== null) scene.remove(point.userData.nextLine)
+        scene.remove(point.userData.camera)
+        scene.remove(point.userData.helper)
+        point.userData.targetPoint.geometry.dispose()
+        scene.remove(point.userData.targetPoint)
+        scene.remove(point.userData.targetLine)
+        point.geometry.dispose()
+        scene.remove(point)
+    }
+
+    function addPoint() { // 在末尾增加相机点位 (场景中至少会存在一个相机，所以一定会从上一个点位开始增加相机点位)
+        let currentLastPoint = points[points.length - 1]
+        let position = new THREE.Vector3().copy(currentLastPoint.position).addScalar(5)
+        let target = new THREE.Vector3().copy(currentLastPoint.userData.targetPoint.position).addScalar(5)
+        let lastPoint = initPoint(position, target) // 生成最新的一个相机点位
+        currentLastPoint.userData.nextPoint = lastPoint
+        lastPoint.userData.lastPoint = currentLastPoint
+        let line = generateLine([ 
+                    new THREE.Vector3().copy(currentLastPoint.position), 
+                    new THREE.Vector3().copy(position) 
+                ], new THREE.Color( 0x0000ff ), true)
+        currentLastPoint.userData.nextLine = line
+        lastPoint.userData.lastLine = line
+    }
+
+    function initPoint(position, target = new THREE.Vector3(0, 0, 0)) { // 初始化相机点位的相关信息，返回单个视点（to scene）
+        let index = points.length + 1
+        let sphere = commonSphere.clone() 
+        if(index == 1) {
+            sphere.material = new THREE.MeshBasicMaterial({color: 0xffff00})
+            sphere.userData.isHeadPoint = true
+        }else {
+            sphere.userData.isHeadPoint = false
+        }
+        sphere.position.copy(position)
+
+        sphere.userData.index = index
+        sphere.userData.pointType = 'camera'
+        sphere.userData.lastLine = null
+        sphere.userData.nextLine = null
+        sphere.userData.lastPoint = null
+        sphere.userData.nextPoint = null
+
+        sphere.userData.camera = helperCamera.clone()
+        sphere.userData.helper = new THREE.CameraHelper(sphere.userData.camera)
+        scene.add(sphere.userData.camera) // camera add to scene
+        sphere.userData.camera.position.copy(position)
+        sphere.userData.camera.lookAt(target)
+        sphere.rotation.copy(sphere.userData.camera.rotation)
+        scene.add(sphere.userData.helper) // helper add to scene
+
+        sphere.userData.targetPoint = commonTargetPoint.clone()
+        sphere.userData.targetPoint.position.copy(target)
+        sphere.userData.targetPoint.userData.pointType = 'target'
+        sphere.userData.targetPoint.userData.index = index
+        sphere.userData.targetPoint.userData.parent = sphere
+        canBeSelectedMeshes.push(sphere.userData.targetPoint)
+        scene.add(sphere.userData.targetPoint)
+
+        sphere.userData.targetLine = generateLine([ position, target ], new THREE.Color(0x00ff00), true)
+        scene.add(sphere.userData.targetLine)
+        targetLines.push(sphere.userData.targetLine)
+
+        canBeSelectedMeshes.push(sphere)
+        points.push(sphere)
+        scene.add(sphere)
+        return sphere
+    }
+
+    function initPointsLines() { // 初始化系统相机点位之间的连接线
+        let line = null, currentPoint = null, nextPoint = null
+        
+        for(let i = 0;i < points.length;i++) { // 根据数据在场景中构建相机辅助系统
+            currentPoint = points[i]
+            if(i < points.length - 1) {
+                nextPoint = points[i + 1]
+                line = generateLine([ 
+                    new THREE.Vector3().copy(currentPoint.position), 
+                    new THREE.Vector3().copy(nextPoint.position) 
+                ], new THREE.Color( 0x0000ff ), true)
+                currentPoint.userData.nextLine = line
+                currentPoint.userData.nextPoint = nextPoint
+            }
+            if(i > 0) {
+                currentPoint.userData.lastLine = points[i - 1].userData.nextLine
+                currentPoint.userData.lastPoint = points[i - 1]
+            }
+            
+        }
+    }
+
+    function selectPoint(point, transformPoint) { // 用户选中一个相机点位的操作
+        currentCameraPoint = point // 赋值当前选中相机点位
+        updatePointPane( currentCameraPoint ) // 更新信息面板的信息
+        point.userData.camera.far = 100
+        point.userData.camera.updateProjectionMatrix()
+        point.userData.helper.update()
+
+        showSubView()    // 打开子视图
+        showPointPlane()  // 打开相机点位的信息面板
+        subCamera = point.userData.camera
+
+        transformControls.attach(transformPoint==undefined?point:transformPoint)
+        controller.enabled = false
+    }
+
+    function releasePoint(point) { // 用户取消选中一个相机点位的操作
+        point.userData.camera.far = 0.2
+        point.userData.camera.updateProjectionMatrix()
+        point.userData.helper.update()
+
+        closeSubView()   // 隐藏子视图
+        closePointPlane() // 隐藏相机点位的信息面板
+
+        transformControls.detach()
+        if(controllerSaved){
+            controller.reset()
+            controllerSaved = false
+        }
+        controller.enabled = true
+        currentCameraPoint = null
+    }
+
+    function renderScene(){ // 刷新主场景
+
+        renderer.render(scene, camera)
+        requestAnimationFrame(renderScene)
+    }
+
+    function renderSubRender() { // 刷新子场景
+       
+        subRender.render(scene, subCamera) // subCamera camera
+        subRenderControl = requestAnimationFrame(renderSubRender)
+    }
+    
+    function initSubRender() { // 初始化子场景的渲染器
+        subRender = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        subCamera.lookAt(0,0,0)
+        subRender.setSize(subView.clientWidth,subView.clientHeight)
+        subRender.setClearColor(0xffffff)
+        subView.appendChild(subRender.domElement)
+        subController = new THREE.OrbitControls( subCamera, subRender.domElement )
+        subController.enableZoom = false    // subView 的控制器关闭变焦功能
+        subController.enablePan = false     // subView 的控制器关闭右键拖动功能
+        renderSubRender()
+
+        subRender.domElement.onmousedown = subViewMousemove // 定义用户在subView框中进行拖动操作的动作
+        
+    }
+
+    function subViewMousemove() { // 用户在子视图中通过拖动鼠标调整相机的点位
+        if(currentCameraPoint == null) return // 
+        subController.object = subCamera // 每一次用户在拖动相机的时候都会根据当前选中的相机点位切换控制器控制的相机
+        subController.target.copy(currentCameraPoint.userData.targetPoint.position) // 同时切换控制器的旋转中心
+        let posCopyControl = null // 定义在拖动期间的更新的控制器
+        let helperTargetBall = new THREE.Mesh(new THREE.SphereBufferGeometry(1,12,12), new THREE.MeshBasicMaterial({color: 0x00ff00}))
+        // helperTargetBall.position.copy(currentCameraPoint.userData.targetPoint.position.sub(currentCameraPoint.position))
+        // currentCameraPoint.add(helperTargetBall)
+        
+        subRender.domElement.onmouseup = function() {
+            cancelAnimationFrame(posCopyControl)
+            posCopyControl = null
+            // helperTargetBall.geometry.dispose()
+            // helperTargetBall.material.dispose()
+            // currentCameraPoint.remove(helperTargetBall)
+        }
+
+        updateStates()
+        function updateStates() {
+            cameraPointMove(currentCameraPoint, helperTargetBall)
+            currentCameraPoint.position.copy(subCamera.position)
+            currentCameraPoint.rotation.copy(subCamera.rotation)
+            posCopyControl = requestAnimationFrame(updateStates)
+        }
+    }
+
+    function closeSubView() { // 隐藏子视图
+        subView.style.zIndex = -1
+    }
+
+    function showSubView() { // 显示子视图
+        subView.style.zIndex = 1
+    }
+
+    function closePointPlane() { // 隐藏相机点位的信息面板
+        pointPlane.style.zIndex = -1
+    }
+
+    function showPointPlane() { // 隐藏相机点位的信息面板
+        pointPlane.style.zIndex = 1
+    }
+
+    function updatePointPane(point) { // 更新信息面板的信息
+        pointPlane.innerHTML = `
+        <div class="trigger" onclick="closePointPlane()"> X </div>
+        <h3>camera point : ${ point.userData.index }</h3>
+        <form>
+            <p>position</p>
+            <ul>
+                <li>x: ${ (point.position.x).toFixed(1) } 
+                    <input type="number" id='inputX'><button type="button" onclick="updateCameraByInput('inputX', 'x')">sure</button>
+                </li>
+                <li>y: ${ (point.position.y).toFixed(1) } 
+                    <input type="number" id='inputY'><button type="button" onclick="updateCameraByInput('inputY', 'y')">sure</button>
+                </li>
+                <li>z: ${ (point.position.z).toFixed(1) } 
+                    <input type="number" id='inputZ'><button type="button" onclick="updateCameraByInput('inputZ', 'z')",>sure</button>
+                </li>
+            </ul>
+        </form>
+        <form>
+            <p>target</p>
+            <ul>
+                <li>x: ${ (point.userData.targetPoint.position.x).toFixed(1) } 
+                    <input type="number" id='inputTX'><button type="button" onclick="updateTargetByInput('inputTX', 'x')">sure</button>
+                </li>
+                <li>y: ${ (point.userData.targetPoint.position.y).toFixed(1) } 
+                    <input type="number" id='inputTY'><button type="button" onclick="updateTargetByInput('inputTY', 'y')">sure</button>
+                </li>
+                <li>z: ${ (point.userData.targetPoint.position.z).toFixed(1) } 
+                    <input type="number" id='inputTZ'><button type="button" onclick="updateTargetByInput('inputTZ', 'z')">sure</button>
+                </li>
+            </ul>
+        </form>
+        `
+    }
+
+    function updateCameraByInput(id, s) { // 根据信息面板的输入值来更新相机点位
+        let value = document.getElementById(id).value
+        if(value == '') {
+            console.log('Sorry! Please input number first!')
+            return
+        }
+        value = parseFloat(value)
+        switch(s){
+            case 'x': 
+                currentCameraPoint.position.x = value;
+                currentCameraPoint.userData.camera.position.x = value;
+                cameraPointMove(currentCameraPoint);
+                break;
+            case 'y': 
+                currentCameraPoint.position.y = value;
+                currentCameraPoint.userData.camera.position.y = value;
+                cameraPointMove(currentCameraPoint);
+                break;
+            case 'z': 
+                currentCameraPoint.position.z = value;
+                currentCameraPoint.userData.camera.position.z = value;
+                cameraPointMove(currentCameraPoint);
+                break;
+        }
+    }
+
+    function updateTargetByInput(id, s) { // 根据信息面板的输入值来更新相机点位
+        let value = document.getElementById(id).value
+        if(value == '') {
+            console.log('Sorry! Please input number first!')
+            return
+        }
+        value = parseFloat(value)
+        switch(s){
+            case 'x': 
+                currentCameraPoint.userData.targetPoint.position.x = value;
+                cameraPointMove(currentCameraPoint);
+                break;
+            case 'y': 
+                currentCameraPoint.userData.targetPoint.position.y = value;
+                cameraPointMove(currentCameraPoint);
+                break;
+            case 'z': 
+                currentCameraPoint.userData.targetPoint.position.z = value;
+                cameraPointMove(currentCameraPoint);
+                break;
+        }
+    }
+
+    function cameraPointMove(point, helperTargetBall) {
+        point.userData.camera.updateProjectionMatrix()
+        point.userData.helper.update()
+        moveLines(point)
+        moveTargetLine(point)
+        // moveTargerPoint(point, helperTargetBall)
+        if(mode == 'translate') {
+            updateCameraAndHelper(point)
+        }
+        
+    }
+
+    function moveTargerPoint(point, helperTargetBall) {
+
+        let targetPoint = point.userData.targetPoint
+        // targetPoint.applyMatrix(point.matrix)
+        // targetPoint.matrix.multiply(point.matrixWorld)
+        // targetPoint.rotation.setFromRotationMatrix(targetPoint.matrix)
+        // console.log(targetPoint.position)
+        // console.log(point.position)
+        // targetPoint.rotation.copy(point.rotation)
+        // console.log(point.rotation)
+    }
+
+    function moveLines(movePoint) { // 更新线段，使之跟随小球一起移动
+        if(movePoint.userData.lastLine !== null){
+            
+            let p1 = new THREE.Vector3().copy(movePoint.userData.lastPoint.position)
+            let p2 = new THREE.Vector3().copy(movePoint.position)
+            updateLine(movePoint.userData.lastLine, [p1, p2])
+        }
+
+        if(movePoint.userData.nextLine !== null){
+        
+            let p1 = new THREE.Vector3().copy(movePoint.userData.nextPoint.position)
+            let p2 = new THREE.Vector3().copy(movePoint.position)
+            updateLine(movePoint.userData.nextLine, [p1, p2])
+        }
+    }
+
+    function moveTargetLine(movePoint) { // 更新视线
+        let p1 = new THREE.Vector3().copy(movePoint.userData.targetPoint.position)
+        let p2 = new THREE.Vector3().copy(movePoint.position)
+        updateLine(movePoint.userData.targetLine, [p1, p2])
+    }
+
+    function updateCameraAndHelper(point) {
+        point.userData.camera.lookAt(point.userData.targetPoint.position)
+        point.rotation.copy(point.userData.camera.rotation)
+    }
+
+    function generateLine(points, color, visible) { // 根据要求生成线段（to scene）
+        var geometry = new THREE.Geometry()
+        geometry.vertices = [...points]
+        var line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color }))
+        line.visible = visible
+        lines.push(line)
+        scene.add(line)
+        return line
+    }
+
+    function updateLine(line, newVertices){ // 刷新线段的点位
+        for(var i = 0;i < newVertices.length;i++) {
+            line.geometry.vertices[i].x = newVertices[i].x
+            line.geometry.vertices[i].y = newVertices[i].y
+            line.geometry.vertices[i].z = newVertices[i].z
+        }
+        line.geometry.verticesNeedUpdate = true
+    }
+
+    function updateCameraMatrix(camera, helper, target) { // 根据对应的目标更新相机的位置和角度
+        camera.position.copy(target.position)
+        camera.rotation.copy(target.rotation)
+    }
+
+    function changeMode(targetMode){
+        transformControls.setMode(targetMode)
+        mode = targetMode
+    }
+
+    function getPointWorldPos (mesh) {
+        mesh.geometry.computeBoundingBox()
+        var centroid = new THREE.Vector3()
+        centroid.addVectors( mesh.geometry.boundingBox.min, mesh.geometry.boundingBox.max )
+        centroid.multiplyScalar( 0.5 )
+        return centroid.applyMatrix4( mesh.matrixWorld )
+    }
+
+    function onResize(){
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth,window.innerHeight)
+    }
+</script>
+</html>
