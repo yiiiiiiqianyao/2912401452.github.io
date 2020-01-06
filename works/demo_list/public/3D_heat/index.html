@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../src/three.js"></script>
+    <script src="../src/OrbitControls.js"></script>
+    <script src="../src/libs/perlin.js"></script>
+
+    <script src="./heatdata.js"></script>
+    <script src="./heatmap.js"></script>
+</head>
+<body>
+    
+</body>
+<script>
+    var scene, camera, renderer, clock, controller, planeGeometry, canvas
+    // console.log(data)
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
+        camera.position.set(100,50,50)
+        renderer = new THREE.WebGLRenderer({
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        renderer.setClearColor('#cccccc')
+        
+        let mat = generateMaterial()
+        let geometry = generateGeometry()
+
+        // let geometry = new THREE.PlaneGeometry(120, 60, 600, 300)
+        // let mat = generateMaterial()
+
+        geometry.computeVertexNormals()    // 用于保证正确渲染纹理 光照 阴影
+        let plane = new THREE.Mesh(geometry,mat)
+        plane.rotation.x = -Math.PI/2
+        scene.add(plane)
+
+        /**
+            * 光源设置
+            */
+        // 方向光1
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight.position.set(400, 200, 300);
+        // directionalLight.castShadow = trues
+        scene.add(directionalLight);
+        // 方向光2
+        var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight2.position.set(-400, -200, -300);
+        scene.add(directionalLight2);
+        //环境光
+        var ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+
+        controller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+
+    function animate(){
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        controller.update(clock.getDelta())
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+
+    function generateMaterial() {
+        var wrap = document.createElement('div')
+        wrap.style.width = '600px'
+        wrap.style.height = '300px'
+        document.body.appendChild(wrap)
+       
+        var heatmapInstance = h337.create({
+            container: wrap,
+            backgroundColor: '#000',
+            radius: 10, // [0,+∞)
+            opacity: 0.6
+        })
+
+        var mapData = {
+            max: 100,
+            data
+        }
+
+        heatmapInstance.setData(mapData) //数据绑定还可以使用
+        canvas = wrap.childNodes[0]
+        let texture = new THREE.Texture(canvas)
+        texture.needsUpdate = true
+        let material = new THREE.MeshLambertMaterial({
+            map: texture,
+            // depthTest: false,
+            // depthWrite: false,
+            // side: THREE.DoubleSide,
+            transparent: true
+        })
+        document.body.removeChild(wrap)
+        wrap = null
+        return material
+        
+    }
+
+    function generateGeometry() {
+        let geometry = new THREE.PlaneGeometry(120, 60, 599, 299)
+        changeHeight(geometry)
+        return geometry
+    }
+
+    function changeHeight(geometry) {
+        var wrap = document.createElement('div')
+        wrap.style.width = '600px'
+        wrap.style.height = '300px'
+        document.body.appendChild(wrap)
+       
+        var heatmapInstance = h337.create({
+            container: wrap,
+            backgroundColor: '#000',
+            radius: 10, // [0,+∞)
+            opacity: 0.8,
+            gradient:{
+                "0":"#000000",  //value为0的颜色
+                "1":"#ffffff"   //value为100的颜色
+            }
+        })
+
+        var mapData = {
+            max: 100,
+            data
+        }
+
+        heatmapInstance.setData(mapData) //数据绑定还可以使用
+        canvas = wrap.childNodes[0]
+
+        let ctx = canvas.getContext('2d')
+        let imgData = ctx.getImageData(0, 0, 600, 300)
+        for(let i = 0;i < imgData.data.length;i=i+4) {
+            let r = imgData.data[i]/255
+            let g = imgData.data[i+1]/200
+            let b = imgData.data[i+2]/255
+            let a = imgData.data[i+3]
+            let h = (r*9 + g*4 + b*1)* a / 500
+            if(geometry.vertices[i/4] !== undefined){
+                geometry.vertices[i/4].z = h
+            }
+        }  
+        document.body.removeChild(wrap)
+        wrap = null
+    }
+   
+
+</script>
+</html>
