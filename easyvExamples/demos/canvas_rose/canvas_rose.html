@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <div style="position: relative;margin: 10% auto;width: 800px;height: 400px;" >
+        <canvas id="canvas" width="800" height="400" style="border: 1px solid;display: block;position: absolute;top: 0;left: 0;"></canvas>
+        <canvas id="canvas2" width="800" height="400" style="display: block;position: absolute;top: 0;left: 0;background-color: transparent;"></canvas>
+    </div>
+</body>
+<script>
+    let drawCirceData = {
+        startRangle: Math.PI,
+        endRangle: Math.PI * 2,
+        canvasWidth: 800,
+        canvasHeight: 400,
+        circleRectCount:28,                 // 每块环形区域带有的环形矩形的数量
+        circleColor: 'rgb(128,128,128)',    // 环形区域的颜色
+        circleRects:[                       // 每块环形区域带有的详细信息
+            {
+                name:"渠道名称",
+                numerical:2056,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:1456,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:1046,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:1556,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:456,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:568,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:2456,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:246,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:2456,
+                unit:"万元"
+            },
+            {
+                name:"渠道名称",
+                numerical:2456,
+                unit:"万元"
+            }
+        ],
+        startRadius: 100,                   // 内径
+        endRadius: 350,                     // 外径
+        maxNumercial: 3000,                 // 提供的最大值
+    }
+    let startRangle = drawCirceData.startRangle
+    let endRangle = drawCirceData.endRangle
+    let canvasWidth = drawCirceData.canvasWidth
+    let canvasHeight = drawCirceData.rangleCount
+    let rangleCount = drawCirceData.circleRects.length
+    let circleRectCount = drawCirceData.circleRectCount
+    let startRadius = drawCirceData.startRadius
+    let endRadius = drawCirceData.endRadius
+    let space = 360 - endRadius   // 环形矩形块之间的间距
+    let color = drawCirceData.circleColor
+
+    let canvas = document.getElementById('canvas')
+    canvas.width = 800
+    canvas.height = 400
+    let ctx = canvas.getContext('2d')
+    ctx.translate(400, 400)
+
+    drawCircleRectPlane(ctx, startRangle, endRangle, rangleCount, circleRectCount, startRadius, endRadius, space, color)
+
+    function drawCircleRectPlane(ctx, startDrawRangle, endDrawRangle, rangleCount, circleRectCount, startRadius, endRadius, space, color){
+        let singleRangle = (endDrawRangle - startDrawRangle) / rangleCount      // 分几个角度
+        // console.log(singleRangle)
+        let singleRadius = (endRadius - startRadius) / circleRectCount  // 每个角度上分几个环形块
+        // ctx.translate(mX, mY)
+        for(var i = 0;i < rangleCount;i++){
+            var mX = space*Math.cos(startDrawRangle + singleRangle*(i + 0.5))
+            var mY = space*Math.sin(startDrawRangle + singleRangle*(i + 0.5))
+            drawRow(ctx, i, space, mX, mY, startDrawRangle, singleRangle, singleRadius, color)
+            // for(var j = 0;j < circleRectCount;j++){
+            //     var smallRadius = startRadius + singleRadius*j + space/5
+            //     var bigRadius = startRadius + singleRadius*(j+1) - space/5
+            //     var startRangle = startDrawRangle + singleRangle*i
+            //     var endRangle = startDrawRangle + singleRangle*(i+1)
+            //     drawColumn(mX, mY, j, smallRadius, bigRadius, startRangle, endRangle)
+            // }
+            // ctx.translate(-mX,- mY)
+        }
+    }
+    function drawRow(ctx, i, space, mX, mY, startDrawRangle, singleRangle, singleRadius, color){
+        setTimeout(function(){
+            for(var j = 0;j < circleRectCount;j++){
+                
+                var smallRadius = startRadius + singleRadius*j + space/6
+                var bigRadius = startRadius + singleRadius*(j+1) - space/6
+    
+                var startRangle = startDrawRangle + singleRangle*i
+                var endRangle = startDrawRangle + singleRangle*(i+1)
+
+                let angle = startDrawRangle + singleRangle*(i + 0.5)
+
+                drawColumn(mX, mY, j, smallRadius, bigRadius, startRangle, endRangle, color, angle, circleRectCount)
+            }
+            let angle = startDrawRangle + singleRangle*(i + 0.5)
+            // drawColumnText(ctx,'123123123',15, 'Arial',angle,bigRadius+15,0)
+        },i*100)
+       
+    }
+    function drawColumn(mX, mY, j, smallRadius, bigRadius, startRangle, endRangle, color, angle, circleRectCount){
+        setTimeout(function(){
+            ctx.translate(mX, mY)
+            // drawStrokeCircleRect(ctx, smallRadius, bigRadius, startRangle, endRangle, '#ff0000')
+            
+            drawFillCircleRect(ctx, smallRadius, bigRadius, startRangle, endRangle, color, color)
+            if(j == circleRectCount-1){
+                drawColumnText(ctx,'123123123',15, 'Arial',angle,bigRadius+15,0)
+            }
+            ctx.translate(-mX,- mY)
+        },j*50)
+    }
+
+    // drawStrokeCircleRect(ctx, 200, 220, Math.PI/6 + Math.PI, Math.PI/3 + Math.PI, '#000000')
+    // drawStrokeCircleRect(ctx, 200, 220, Math.PI/6 + Math.PI*3/2, Math.PI/3 + Math.PI*3/2, '#ff0000')
+    drawFillCircleRect(ctx, 200, 220, Math.PI/6 + Math.PI, Math.PI/3 + Math.PI, '#ffff00','#ff0000')
+
+    /*
+        startRangle X 轴负半轴 顺时针方向 弧度制
+    */
+    function drawStrokeCircleRect(ctx, smallRadius, bigRadius, startRangle, endRangle, strokeStyle){
+        ctx.strokeStyle = strokeStyle
+        ctx.beginPath() 
+        ctx.arc(0, 0, bigRadius, startRangle, endRangle, false)
+        ctx.arc(0, 0, smallRadius, endRangle, startRangle,true)
+        ctx.lineTo(- bigRadius * Math.cos(startRangle - Math.PI), - bigRadius * Math.sin(startRangle - Math.PI))
+        ctx.stroke()
+        ctx.closePath()
+        
+    }
+
+    function drawFillCircleRect(ctx, smallRadius, bigRadius, startRangle, endRangle, fillStyle, strokeStyle){
+        ctx.fillStyle = fillStyle   
+        ctx.strokeStyle = strokeStyle
+        ctx.beginPath() 
+        ctx.arc(0, 0, bigRadius, startRangle, endRangle)
+        ctx.arc(0, 0, smallRadius, endRangle, startRangle,true)
+        ctx.lineTo(- bigRadius * Math.cos(startRangle - Math.PI), - bigRadius * Math.sin(startRangle - Math.PI))
+        ctx.fill()
+        ctx.stroke()
+    }
+
+    function drawColumnText(ctx, text, fontSize, fontFamily, rotation, x, y){
+        ctx.rotate(rotation)
+        ctx.translate(x, y)
+        ctx.rotate(Math.PI/2)
+        ctx.textAlign='center'
+        ctx.font=`${fontSize}px ${fontFamily}`
+        ctx.fillText(text, 0, 0)
+        ctx.rotate(-Math.PI/2)
+        ctx.translate(-x, -y)
+        ctx.rotate(-rotation)
+    }
+
+    let canvas2 = document.getElementById('canvas2')
+    canvas2.width = 800
+    canvas2.height = 400
+    let ctx2 = canvas2.getContext('2d')
+    ctx2.translate(400, 400)
+
+</script>
+</html>

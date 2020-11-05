@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - postprocessing - unreal bloom</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #fff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+        </style>
+        <script src="./three.js"></script>
+        <script src="./OrbitControls.js"></script>
+
+        <script src="./EffectComposer.js"></script>
+        <script src="./RenderPass.js"></script>
+        <script src="./ShaderPass.js"></script>
+        <script src="./CopyShader.js"></script>
+
+        <script src="./OutlinePass.js"></script>
+
+	</head>
+	<body>
+		<div id="container"></div>
+        
+		<script>
+			var scene, camera, controls
+			var composer, renderer, mesh, mesh2
+			var outlinePass = null
+            var container = document.getElementById( 'container' )
+
+			renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } )
+			renderer.setPixelRatio( window.devicePixelRatio )
+			renderer.setSize( window.innerWidth, window.innerHeight )
+            container.appendChild( renderer.domElement )
+
+			scene = new THREE.Scene()
+
+			camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 100000 )
+			camera.position.set( 5, 5, 5 )
+			scene.add( camera )
+
+			controls = new THREE.OrbitControls( camera, renderer.domElement )
+            
+            scene.add( new THREE.AxesHelper( 50 ) );
+
+            var geometry = new THREE.BoxGeometry(1, 1, 1);
+            var material = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
+            var mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(4, 0, 0)
+            mesh.rotation.x = Math.PI/4 
+            scene.add(mesh)
+
+            var mesh2 = mesh.clone()
+            mesh2.position.x = 0
+            scene.add(mesh2)
+
+            initOutLineComposer(renderer, container.clientWidth, container.clientHeight)
+
+            renderer.domElement.addEventListener('click', e => {
+                let coords = tranformMouseCoord(e.clientX, e.clientY, container)
+                let intersects = getSelectedMeshes(coords, camera, [mesh, mesh2])
+            
+                if(intersects.length > 0) { // user select object
+                    let { object } = intersects[0]
+                    outlinePass && (outlinePass.selectedObjects = [object])
+                }else { // user select nothing
+                    outlinePass && (outlinePass.selectedObjects = [])
+                }
+            }, false)
+
+            animate()
+
+			window.onresize = function () {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+				renderer.setSize( width, height );
+			};
+			function animate() {
+				requestAnimationFrame( animate )
+                // renderer.render(scene, camera)
+                composer && composer.render()
+            }
+
+        function initOutLineComposer(renderer, width, height) {
+            var params = {
+                edgeStrength: 3.0,
+                edgeGlow: 0.0,
+                edgeThickness: 1.0,
+                pulsePeriod: 0,
+                rotate: false,
+                usePatternTexture: false
+            };
+        
+            composer = new THREE.EffectComposer(renderer)
+            let renderPass = new THREE.RenderPass(scene, camera)
+            composer.addPass( renderPass )
+
+            outlinePass = new THREE.OutlinePass(new THREE.Vector2(width, height), scene, camera)
+            outlinePass.edgeStrength = params.edgeStrength
+            outlinePass.edgeGlow = params.edgeGlow
+            outlinePass.edgeThickness = params.edgeThickness 
+            outlinePass.pulsePeriod = params.pulsePeriod
+            outlinePass.usePatternTexture = params.usePatternTexture
+            // outlinePass.visibleEdgeColor.set( new THREE.Color(0, 0, 0) );
+            outlinePass.hiddenEdgeColor.set( new THREE.Color(1, 1, 0) );
+
+            composer.addPass(outlinePass)
+        }
+
+        function tranformMouseCoord(x2D, y2D, domElement) {
+            let { left, top, width, height } = domElement.getBoundingClientRect()
+            return new THREE.Vector2().set(
+                ((x2D - left) / width) * 2 -1,
+                -((y2D - top) / height) * 2 + 1
+            )
+        }
+
+        function getSelectedMeshes(coords, camera, Meshes) {
+            let testAll = true // 射线在检测相交物体的时候会检查所有后代
+            let raycaster = new THREE.Raycaster()
+            raycaster.setFromCamera(coords, camera)
+            return raycaster.intersectObjects(Meshes, testAll)
+        }
+
+           
+		</script>
+
+	</body>
+
+</html>

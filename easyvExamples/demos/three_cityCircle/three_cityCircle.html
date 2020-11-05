@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="shortcut icon" href="../favicon.ico" />
+  <link rel="bookmark" href="../favicon.ico" />
+  <title>Document</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+  <script src="./three.js"></script>
+  <script src="./OrbitControls.js"></script>
+  <script src="./GLTFLoader.js"></script>
+
+  <script src="./EffectComposer.js"></script>
+  <script src="./RenderPass.js"></script>
+  <script src="./ShaderPass.js"></script>
+  <script src="./CopyShader.js"></script>
+  <script src="./LuminosityHighPassShader.js"></script>
+  <script src="./UnrealBloomPass.js"></script>
+</head>
+
+<body></body>
+<script type="x-shader/x-vertex" id="vertexShader">
+  varying vec4 v_position;
+  varying vec2 vUv;
+  #include <common>
+  #include <logdepthbuf_pars_vertex>//这个是为了支持logDepth
+  #ifdef USE_RELATIVE
+    uniform mat4 relativeModelMatrix;
+  #endif
+  void main() {
+    vUv = uv;
+    vec4 pos = vec4(position, 1.0);
+
+    gl_Position = projectionMatrix * modelViewMatrix * pos;
+    #include <logdepthbuf_vertex>
+      v_position = pos;
+    //#ifdef USE_RELATIVE
+    //v_position = relativeModelMatrix * pos;
+    //#else
+    //  v_position = pos;
+    //#endif
+  }
+
+</script>
+<script type="x-shader/x-vertex" id="fragmentShader">
+  bool isMax(vec3 a, vec3 b){
+    float ax = a.x;
+    float ay = a.y;
+    float az = a.z;
+    float bx = b.x;
+    float by = b.y;
+    float bz = b.z;
+    return ax > bx && ay > by && az > bz;
+}
+ bool isMin(vec3 a, vec3 b){
+    float ax = a.x;
+    float ay = a.y;
+    float az = a.z;
+    float bx = b.x;
+    float by = b.y;
+    float bz = b.z;
+    return ax < bx && ay < by && az < bz;
+}
+  uniform vec3 color;
+  uniform vec3 maxPos;
+  uniform vec3 minPos;
+  uniform vec3 direction;
+  varying vec4 v_position;
+  varying vec2 vUv;
+
+  uniform float innerCircleWidth;
+  uniform float circleWidth;
+  uniform sampler2D texture;
+
+  vec4 center = vec4(0.0, -50.0, 0.0, 0.0);
+  void main() {
+    
+
+    vec4 circleColor = vec4(1.0, 1.0, 0.0, 1.0);
+    float dis = length(v_position - center);
+    
+    if(dis < innerCircleWidth + circleWidth && dis > innerCircleWidth) {
+      float r = (dis - innerCircleWidth) / circleWidth;
+      //gl_FragColor = vec4(mix(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 0.0), r), 1.0);
+      vec4 tex = texture2D( texture, vUv);
+      gl_FragColor = (tex.r + tex.g + tex.b < 1.0)?vec4(mix(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 0.0), r), 1.0):tex;
+    }else if(dis < innerCircleWidth){
+      gl_FragColor = vec4(color, 1.0);
+    }else {
+      gl_FragColor = vec4(color, 0);
+    }
+    
+    //gl_FragColor = texture2D( texture, vUv);
+    
+  }
+</script>
+<!-- 
+
+  
+
+
+  //gl_FragColor = mix( vec4(0,1.0,0,1.0), vec4(color, 1.0), 
+    //  //float(isMin(v_position.xyz*0.5, maxPos) && isMax(v_position.xyz, minPos))
+    //  //v_position.x
+    //  abs(v_position.x/maxPos.x)
+    //);
+
+   gl_FragColor = mix(vec4(0,0,0,0),vec4(color, 1.0),float(isMin(v_position.xyz,maxPos) && isMax(v_position.xyz,minPos)));
+        #ifdef USE_UVMAP
+           gl_FragColor.a *= texture2D( uvMap, texCoord ).r;//可以传入一个渐变贴图，防止扫光太生硬
+        #endif
+
+ -->
+<script>
+  let scene, camera, renderer, clock, controlller, shadermaterial, composer, mixer
+  let city = null
+  let params = {
+    exposure: 1,
+    bloomStrength: 0.9,
+    bloomThreshold: 0.1,
+    bloomRadius: 1
+  }
+
+  init();
+  animate();
+
+  // - Functions -
+  function init() {
+    scene = new THREE.Scene();
+    clock = new THREE.Clock();
+    camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      10000
+    );
+    camera.position.set(150, 150, 150);
+    renderer = new THREE.WebGLRenderer({
+      antialias: true, // 开启抗锯齿处理
+      alpha: true,
+    });
+    // renderer.setClearColor(new THREE.Color(0x000000))
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // renderer.shadowMap.enabled = true
+    let texLod = new THREE.TextureLoader()
+    t1 = texLod.load('./tex.png')
+
+    shadermaterial = new THREE.ShaderMaterial( {
+      uniforms: {
+        color: {
+          value: new THREE.Vector3(0.5, 0, 0)
+        },
+        maxPos: {
+          value: new THREE.Vector3(219, 24, 98)
+        },
+        minPos: {
+          value: new THREE.Vector3(-224, 0, -101)
+        },
+        relativeModelMatrix: {
+          value: new THREE.Matrix4()
+        },
+        direction: {
+          value: new THREE.Vector3(1, 0, 0)
+        },
+        innerCircleWidth: {
+          value: 0
+        },
+        circleWidth: {
+          value: 50
+        },
+        texture: {
+          value: t1
+        },
+      },
+      vertexShader: document.getElementById( 'vertexShader' ).textContent,
+      fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+    } );
+
+    var axisHelper = new THREE.AxesHelper(10);
+    scene.add(axisHelper);
+    
+    var loader = new THREE.GLTFLoader();
+    loader.load('./city.glb', e => {
+      city = e.scene.children[2]
+      city.material = shadermaterial
+      // console.log(new THREE.Box3().setFromObject(city))
+      // console.log(city)
+      scene.add(city)
+    })
+    
+
+    var renderScene = new THREE.RenderPass( scene, camera );
+    var bloomPass = new THREE.UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+    bloomPass.threshold = params.bloomThreshold;
+    bloomPass.strength = params.bloomStrength;
+    bloomPass.radius = params.bloomRadius;
+    composer = new THREE.EffectComposer( renderer );
+    composer.setSize( window.innerWidth, window.innerHeight );
+    composer.addPass( renderScene );
+    // bloomPass.enabled = false
+    composer.addPass( bloomPass );
+
+
+    /**
+     * 光源设置
+     */
+    // 方向光1
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    directionalLight.position.set(400, 200, 300);
+    // directionalLight.castShadow = true
+    scene.add(directionalLight);
+    // 方向光2
+    var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+    directionalLight2.position.set(-400, -200, -300);
+    scene.add(directionalLight2);
+    //环境光
+    var ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+
+    controlller = new THREE.OrbitControls(camera, renderer.domElement);
+    document.body.appendChild(renderer.domElement);
+    window.onresize = onResize;
+  }
+
+
+  function animate() {
+    requestAnimationFrame(animate);
+    // renderer.render(scene, camera);
+
+    // composer.render()
+    renderer.autoClear = false
+    // mesh.scale.set(1.0, 1.0, 1.0)
+    renderer.render(scene, camera)
+    composer.render()
+    renderer.autoClear = true
+
+    controlller.update(clock.getDelta());
+    // city && (shadermaterial.uniforms.relativeModelMatrix.value = city.matrix)
+    shadermaterial.uniforms.innerCircleWidth.value += 3
+    if(shadermaterial.uniforms.innerCircleWidth.value > 300) {
+      shadermaterial.uniforms.innerCircleWidth.value = -50
+    }
+  }
+
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+</script>
+
+</html>

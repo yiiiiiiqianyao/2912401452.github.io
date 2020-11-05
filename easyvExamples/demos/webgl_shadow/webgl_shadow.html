@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./webgl-utils.js"></script>
+    <script src="./webgl-debug.js"></script>
+    <script src="./cuon-utils.js"></script>
+    <script src="./cuon-matrix.js"></script>
+</head>
+<body>
+    <canvas id="webgl" width="800" height="400"></canvas>
+</body>
+<script>
+    //设置WebGL全屏显示
+    var canvas = document.getElementById("webgl");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    //设置阴影贴图顶点着色器
+    var shadowVertexShaderSource = "" +
+        "attribute vec4 a_Position;\n" +
+        "uniform mat4 u_MvpMatrix;\n" +
+        "void main(){\n" +
+        "   gl_Position = u_MvpMatrix * a_Position;\n" + //计算出在灯源视点下各个坐标的位置
+        "}\n";
+
+    //设置阴影贴图的片元着色器
+    var shadowFragmentShaderSource = "" +
+        "#ifdef GL_ES\n" +
+        "precision mediump float;\n" +
+        "#endif\n" +
+        "void main(){\n" +
+        "   gl_FragColor = vec4( 0.0, 0.0, 0.0,gl_FragCoord.z);\n" + //将灯源视点下的每个顶点的深度值存入绘制的颜色内
+        "}\n";
+    
+    //正常绘制的顶点着色器
+    var vertexShaderSource = "" +
+        "attribute vec4 a_Position;\n" +
+        "attribute vec4 a_Color;\n" +
+        "uniform mat4 u_MvpMatrix;\n" + //顶点的模型投影矩阵
+        "uniform mat4 u_MvpMatrixFromLight;\n" + //顶点基于光源的模型投影矩阵
+        "varying vec4 v_PositionFromLight;\n" + //将基于光源的顶点位置传递给片元着色器
+        "varying vec4 v_Color;\n" + //将颜色传递给片元着色器
+        "void main(){\n" +
+        "   gl_Position = u_MvpMatrix * a_Position;\n" + //计算并设置顶点的位置
+        "   v_PositionFromLight = u_MvpMatrixFromLight * a_Position;\n" + //计算基于光源的顶点位置
+        "   v_Color = a_Color;\n" +
+        "}\n";
+
+    //正常绘制的片元着色器
+    var fragmentShaderSource = "" +
+        "#ifdef GL_ES\n" +
+        "precision mediump float;\n" +
+        "#endif\n" +
+        "uniform sampler2D u_ShadowMap;\n" + //纹理的存储变量
+        "varying vec4 v_PositionFromLight;\n" + //从顶点着色器传过来的基于光源的顶点坐标
+        "varying vec4 v_Color;\n" + //顶点的颜色
+        "void main(){\n" +
+        "   vec3 shadowCoord = (v_PositionFromLight.xyz/v_PositionFromLight.w)/2.0 + 0.5;\n" +
+        "   vec4 rgbaDepth = texture2D(u_ShadowMap, shadowCoord.xy);\n" +
+        "   float depth = rgbaDepth.a;\n" +
+        "   float visibility = (shadowCoord.z > depth + 0.005) ? 0.5 : 1.0;\n" +
+        "   gl_FragColor = vec4(v_Color.rgb * visibility, v_Color.a);\n" +
+        "}\n";
+
+    //生成的纹理的分辨率，纹理必须是标准的尺寸 256*256 1024*1024  2048*2048
+    var resolution = 256;
+    // var resolution = 2048;
+    var offset_width = resolution;
+    var offset_height = resolution;
+
+    //灯光的位置
+    var light_x = 0.0;
+    var light_y = 7.0;
+    var light_z = 2.0;
+
+    function main() {
+        var canvas = document.getElementById("webgl");
+        
+        var gl = getWebGLContext(canvas);
+
+        if(!gl){
+            console.log("无法获取WebGL的上下文");
+            return;
+        }
+
+        //初始化阴影着色器，并获得阴影程序对象,相关变量的存储位置
+        var shadowProgram = createProgram(gl, shadowVertexShaderSource, shadowFragmentShaderSource);
+        shadowProgram.a_Position = gl.getAttribLocation(shadowProgram, "a_Position");
+        shadowProgram.u_MvpMatrix = gl.getUniformLocation(shadowProgram, "u_MvpMatrix");
+        if(shadowProgram.a_Position < 0 || !shadowProgram.u_MvpMatrix ){
+            console.log("无法获取到阴影着色器的相关变量");
+            return;
+        }
+
+        //初始化正常绘制着色器，获取到程序对象并获取相关变量的存储位置
+        var normalProgram = createProgram(gl, vertexShaderSource, fragmentShaderSource);
+        normalProgram.a_Position = gl.getAttribLocation(normalProgram, "a_Position");
+        normalProgram.a_Color = gl.getAttribLocation(normalProgram, "a_Color");
+        normalProgram.u_MvpMatrix = gl.getUniformLocation(normalProgram, "u_MvpMatrix");
+        normalProgram.u_MvpMatrixFromLight = gl.getUniformLocation(normalProgram, "u_MvpMatrixFromLight");
+        normalProgram.u_ShadowMap = gl.getUniformLocation(normalProgram, "u_ShadowMap");
+        if(normalProgram.a_Position < 0 || normalProgram.a_Color < 0 || !normalProgram.u_MvpMatrix || !normalProgram.u_MvpMatrixFromLight || !normalProgram.u_ShadowMap){
+            console.log("无法获取到正常绘制着色器的相关变量");
+            return;
+        }
+
+        //设置相关数据，并存入缓冲区内
+        var triangle = initVertexBuffersForTriangle(gl);
+        var plane = initVertexBuffersForPlane(gl);
+        if(!triangle || !plane){
+            console.log("无法设置相关顶点的信息");
+            return;
+        }
+
+        //设置帧缓冲区对象
+        var fbo = initFramebufferObject(gl);
+        if(!fbo){
+            console.log("无法设置帧缓冲区对象");
+            return;
+        }
+
+        //开启0号纹理缓冲区并绑定帧缓冲区对象的纹理
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, fbo.texture);
+
+        //设置背景设并开启隐藏面消除功能
+        gl.clearColor(0.0,0.0,0.0,1.0);
+        gl.enable(gl.DEPTH_TEST);
+
+        //声明一个光源的变换矩阵
+        var viewProjectMatrixFromLight = new Matrix4();
+        viewProjectMatrixFromLight.setPerspective(70.0, offset_width/offset_height, 1.0, 100.0);
+        viewProjectMatrixFromLight.lookAt(light_x, light_y, light_z,0.0,0.0,0.0,0.0,1.0,0.0);
+
+        //为常规绘图准备视图投影矩阵
+        var viewProjectMatrix = new Matrix4();
+        viewProjectMatrix.setPerspective(45.0, canvas.width/canvas.height, 1.0, 100.0);
+        viewProjectMatrix.lookAt(0.0,7.0,9.0,0.0,0.0,0.0,0.0,1.0,0.0);
+
+        var currentAngle = 0.0; //声明当前旋转角度的变量
+        var mvpMatrixFromLight_t = new Matrix4(); //光源（三角形）的模型投影矩阵
+        var mvpMatrixFromLight_p = new Matrix4(); //光源（平面）的模型投影矩阵
+
+        (function tick() {
+            currentAngle = animate(currentAngle);
+
+            //切换绘制场景为帧缓冲区
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+            gl.viewport(0.0,0.0,offset_height,offset_height);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            gl.useProgram(shadowProgram); //使用阴影程序对象绘制阴影纹理
+
+            //绘制三角形和平面（用于生成阴影贴图）
+            drawTriangle(gl, shadowProgram, triangle, currentAngle, viewProjectMatrixFromLight);
+            mvpMatrixFromLight_t.set(g_mvpMatrix); //稍后使用
+            drawPlane(gl, shadowProgram, plane, viewProjectMatrixFromLight);
+            mvpMatrixFromLight_p.set(g_mvpMatrix); //稍后使用
+
+            //解除帧缓冲区的绑定，绘制正常颜色缓冲区
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0.0, 0.0, canvas.width, canvas.height);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            //切换为正常的程序对象并绘制
+            gl.useProgram(normalProgram);
+            gl.uniform1i(normalProgram.u_ShadowMap, 0.0);
+
+            //绘制三角形和平面（正常绘制的图形）
+            gl.uniformMatrix4fv(normalProgram.u_MvpMatrixFromLight, false, mvpMatrixFromLight_t.elements);
+            drawTriangle(gl, normalProgram, triangle, currentAngle, viewProjectMatrix);
+            gl.uniformMatrix4fv(normalProgram.u_MvpMatrixFromLight, false, mvpMatrixFromLight_p.elements);
+            drawPlane(gl, normalProgram, plane, viewProjectMatrix);
+
+            requestAnimationFrame(tick);
+        })();
+    }
+
+    function drawTriangle(gl,program,triangle,angle,viewProjectMatrix) {
+        //设置三角形图形的旋转角度，并绘制图形
+        g_modelMatrix.setRotate(angle, 0.0, 1.0, 0.0);
+        draw(gl, program, triangle, viewProjectMatrix);
+    }
+
+    function drawPlane(gl, program, plane, viewProjectMatrix) {
+        //设置平面图形的旋转角度并绘制
+        g_modelMatrix.setRotate(-45.0, 0.0, 1.0, 1.0);
+        draw(gl, program, plane, viewProjectMatrix);
+    }
+
+    function draw(gl, program, obj, viewProjectMatrix) {
+        initAttributeVariable(gl, program.a_Position, obj.vertexBuffer);
+        //判断程序对象上面是否设置了a_Color值，如果有，就设置颜色缓冲区
+        if(program.a_Color != undefined){
+            initAttributeVariable(gl, program.a_Color, obj.colorBuffer);
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.indexBuffer);
+
+        //设置模板视图投影矩阵，并赋值给u_MvpMatrix
+        g_mvpMatrix.set(viewProjectMatrix);
+        g_mvpMatrix.multiply(g_modelMatrix);
+        gl.uniformMatrix4fv(program.u_MvpMatrix, false, g_mvpMatrix.elements);
+
+        gl.drawElements(gl.TRIANGLES, obj.numIndices, gl.UNSIGNED_BYTE, 0);
+    }
+
+    function initAttributeVariable(gl, a_attribute, buffer) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.vertexAttribPointer(a_attribute, buffer.num, buffer.type, false, 0, 0);
+        gl.enableVertexAttribArray(a_attribute);
+    }
+
+    function animate(angle) {
+        var now = +new Date();
+        var elapsed = now - last;
+        last = now;
+        var newAngle = angle + (angle_step*elapsed)/1000.0;
+        return newAngle%360;
+    }
+
+    function initFramebufferObject(gl) {
+        var framebuffer, texture, depthBuffer;
+
+        //定义错误函数
+        function error() {
+            if(framebuffer) gl.deleteFramebuffer(framebuffer);
+            if(texture) gl.deleteFramebuffer(texture);
+            if(depthBuffer) gl.deleteFramebuffer(depthBuffer);
+            return null;
+        }
+
+        //创建帧缓冲区对象
+        framebuffer = gl.createFramebuffer();
+        if(!framebuffer){
+            console.log("无法创建帧缓冲区对象");
+            return error();
+        }
+
+        //创建纹理对象并设置其尺寸和参数
+        texture = gl.createTexture();
+        if(!texture){
+            console.log("无法创建纹理对象");
+            return error();
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, offset_width, offset_height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        framebuffer.texture = texture;//将纹理对象存入framebuffer
+
+        //创建渲染缓冲区对象并设置其尺寸和参数
+        depthBuffer = gl.createRenderbuffer();
+        if(!depthBuffer){
+            console.log("无法创建渲染缓冲区对象");
+            return error();
+        }
+
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, offset_width, offset_height);
+
+        //将纹理和渲染缓冲区对象关联到帧缓冲区对象上
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER,depthBuffer);
+
+        //检查帧缓冲区对象是否被正确设置
+        var e = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        if(gl.FRAMEBUFFER_COMPLETE !== e){
+            console.log("渲染缓冲区设置错误"+e.toString());
+            return error();
+        }
+
+        //取消当前的focus对象
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+
+        return framebuffer;
+    }
+
+    function initVertexBuffersForPlane(gl) {
+        // 创建一个面
+        //  v1------v0
+        //  |        |
+        //  |        |
+        //  |        |
+        //  v2------v3
+
+        // 顶点的坐标
+        var vertices = new Float32Array([
+            3.0, -1.7, 2.5, -3.0, -1.7, 2.5, -3.0, -1.7, -2.5, 3.0, -1.7, -2.5    // v0-v1-v2-v3
+        ]);
+
+        // 颜色的坐标
+        var colors = new Float32Array([
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+        ]);
+
+        // 顶点的索引
+        var indices = new Uint8Array([0, 1, 2,   0, 2, 3]);
+
+        //将顶点的信息写入缓冲区对象
+        var obj = {};
+        obj.vertexBuffer = initArrayBufferForLaterUse(gl, vertices, 3, gl.FLOAT);
+        obj.colorBuffer = initArrayBufferForLaterUse(gl, colors, 3, gl.FLOAT);
+        obj.indexBuffer = initElementArrayBufferForLaterUse(gl, indices, gl.UNSIGNED_BYTE);
+        if(!obj.vertexBuffer || !obj.colorBuffer || !obj.indexBuffer) return null;
+
+        obj.numIndices = indices.length;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        return obj;
+    }
+
+    function initVertexBuffersForTriangle(gl) {
+        // Create a triangle
+        //       v2
+        //      / |
+        //     /  |
+        //    /   |
+        //  v0----v1
+
+        // 顶点的坐标
+        var vertices = new Float32Array([-0.8, 3.5, 0.0, 0.8, 3.5, 0.0, 0.0, 3.5, 1.8]);
+        // 颜色的坐标
+        var colors = new Float32Array([1.0, 0.5, 0.0, 1.0, 0.5, 0.0, 1.0, 0.0, 0.0]);
+        // 顶点的索引
+        var indices = new Uint8Array([0, 1, 2]);
+
+        //创建一个对象保存数据
+        var obj = {};
+
+        //将顶点信息写入缓冲区对象
+        obj.vertexBuffer = initArrayBufferForLaterUse(gl, vertices, 3, gl.FLOAT);
+        obj.colorBuffer = initArrayBufferForLaterUse(gl, colors, 3, gl.FLOAT);
+        obj.indexBuffer = initElementArrayBufferForLaterUse(gl, indices, gl.UNSIGNED_BYTE);
+        if(!obj.vertexBuffer || !obj.colorBuffer || !obj.indexBuffer) return null;
+
+        obj.numIndices = indices.length;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        return obj;
+    }
+
+    function initArrayBufferForLaterUse(gl, data, num, type) {
+        var buffer = gl.createBuffer();
+        if(!buffer){
+            console.log("无法创建缓冲区对象");
+            return null;
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+        buffer.num = num;
+        buffer.type = type;
+
+        return buffer;
+    }
+
+    function initElementArrayBufferForLaterUse(gl, data, type) {
+        var buffer = gl.createBuffer();
+        if(!buffer){
+            console.log("无法创建着色器");
+            return null;
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+        buffer.type = type;
+
+        return buffer;
+    }
+
+    //声明坐标转换矩阵
+    var g_modelMatrix = new Matrix4();
+    var g_mvpMatrix = new Matrix4();
+
+    var angle_step = 30;
+    var last = +new Date();
+
+    main()
+
+</script>
+</html>

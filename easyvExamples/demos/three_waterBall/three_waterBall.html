@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="./three.js"></script>
+    <script src="./OrbitControls.js"></script>
+    <script src="./Water.js"></script>
+    <script type="x-shader/x-vertex" id="vertexShader">
+        varying vec3 vNormal;
+        varying vec3 vPositionNormal;
+        varying vec2 vUv;
+        void main() 
+        {
+            vUv = uv;
+            vNormal = normalize( normalMatrix * normal ); // 转换到视图空间
+            vPositionNormal = normalize(( modelViewMatrix * vec4(position, 1.0) ).xyz);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        }
+      </script>
+      <script type="x-shader/x-vertex" id="fragmentShader">
+        uniform vec3 glowColor;
+        uniform float b;
+        uniform float p;
+        uniform float s;
+        varying vec3 vNormal;
+        varying vec3 vPositionNormal;
+        varying vec2 vUv;
+        void main() 
+        {
+          // 菲涅尔反射等式
+          // bias  (b) 值决定了颜色最亮值的位置
+          // power (p) 决定了透明度变化速度及方向
+          // scale (s) 决定变化方向
+          float a = pow( b + s * abs(dot(vNormal, vPositionNormal)), p );
+          //gl_FragColor = vec4( glowColor, 1 );
+          if(vUv.y < 0.5) {
+            gl_FragColor = vec4( glowColor * 0.8, 0.3  );
+          }else {
+            gl_FragColor = vec4( glowColor, a * (1.0 - vUv.y) );
+          }
+          
+        }
+      </script>
+</head>
+<body>
+    <div style="position: absolute;top: 0;left: 0;">
+        <input type="range" oninput="input(this)">
+    </div>
+</body>
+<script>
+    var percent = 0.5
+    function input(e) {
+        percent = e.value/100
+    }
+    var scene, camera, renderer, clock, controlller
+    var geometry, material, water, shadermaterial
+    var time = 0.0;
+
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+        scene.background = new THREE.Color(percent, percent, percent)
+
+        clock = new THREE.Clock();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000000)
+        camera.position.set(10, 10, 10)
+        renderer = new THREE.WebGLRenderer({    
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        renderer.setSize(window.innerWidth,window.innerHeight)
+      
+        // var waterGeometry = new THREE.PlaneBufferGeometry( 10000, 10000 );
+        // var waterGeometry = new THREE.RingBufferGeometry( 0, 100, 32 );
+
+        // var x = 0, y = 0;
+
+        // var heartShape = new THREE.Shape();
+
+        // heartShape.moveTo( x + 5, y + 5 );
+        // heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+        // heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
+        // heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
+        // heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+        // heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+        // heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
+
+        // var waterGeometry = new THREE.ShapeBufferGeometry( heartShape );
+        var waterGeometry = new THREE.CircleBufferGeometry( 20, 32 );
+        water = new THREE.Water(
+            waterGeometry,
+            {
+                textureWidth: 512,
+                textureHeight: 512,
+                waterNormals: new THREE.TextureLoader().load( './waternormals.jpg', function ( texture ) {
+
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+                } ),
+                alpha: 1.0,
+                // sunDirection: light.position.clone().normalize(),
+                sunColor: 0xffffff,
+                // waterColor: 0x001e0f,
+                waterColor: new THREE.Color('#20B2AA'),
+                distortionScale: 3.7,
+                fog: scene.fog !== undefined
+            }
+        );
+        water.rotation.x = - Math.PI / 2;
+        scene.add( water );
+
+        shadermaterial = new THREE.ShaderMaterial( {
+            uniforms: {
+                "s":   { type: "f", value: -1.0},
+                "b":   { type: "f", value: 1.0},
+                "p":   { type: "f", value: 2.0 },
+                glowColor: { type: "c", value: new THREE.Color('#20B2AA') }
+            },
+            vertexShader:   document.getElementById( 'vertexShader'   ).textContent,
+            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+            // side: THREE.FrontSide,
+            // blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.5
+      })
+   
+   
+        var geometry = new THREE.SphereBufferGeometry( 20, 32, 32 );
+        var material = new THREE.MeshBasicMaterial( {color: 0xffff00, transparent: true, opacity: 0.3} );
+        var sphere = new THREE.Mesh( geometry, shadermaterial );
+        scene.add( sphere );
+        // scene.add(plane)
+
+        var axisHelper = new THREE.AxesHelper( 10 )
+        scene.add( axisHelper )
+
+        /**
+            * 光源设置
+            */
+        // 方向光1
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 9);
+        directionalLight.position.set(400, 200, 300);
+        // directionalLight.castShadow = true
+        scene.add(directionalLight);
+        // 方向光2
+        var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight2.position.set(-400, -200, -300);
+        scene.add(directionalLight2);
+        //环境光
+        var ambient = new THREE.AmbientLight(0xffffff, 10);
+        scene.add(ambient);
+
+        controlller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+
+    function animate(){
+        scene.background = new THREE.Color(percent, percent, percent)
+        var time = performance.now() * 0.001;
+        water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        controlller.update(clock.getDelta())
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+</script>
+</html>

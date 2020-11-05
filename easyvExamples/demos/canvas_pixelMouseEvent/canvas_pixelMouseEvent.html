@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pixelMouseEvent</title>
+</head>
+<body>
+    <canvas id="canvas" width="600px" height="300px"></canvas>
+    <canvas id="canvas2" width="600px" height="300px"></canvas>
+</body>
+<script>
+    let canvas = document.getElementById('canvas')
+    let canvas2 = document.getElementById('canvas2')
+    canvas.width = 600
+    canvas.height = 300
+    let { left: canvasLeft, top: canvasTop } = canvas.getBoundingClientRect()
+
+    canvas2.width = 600
+    canvas2.height = 300
+    let { left: canvas2Left, top: canvas2Top } = canvas2.getBoundingClientRect()
+
+    let ctx = canvas.getContext('2d')
+    ctx.fillRect(0, 0, 600, 300)
+
+    let ctx2 = canvas2.getContext('2d')
+    ctx2.fillRect(0, 0, 600, 300)
+
+
+    ctx.fillStyle = '#fff'
+    canvas.onmousedown = function(de) {
+        let lastX = de.clientX - canvasLeft
+        let lastY = de.clientY - canvasTop
+        canvas.onmousemove = function(me) {
+            let currentX = me.clientX - canvasLeft
+            let currentY = me.clientY - canvasTop
+            ctx.fillRect(currentX, currentY, 5, 5)
+            // pixelMouseEvent(lastX, lastY, currentX, currentY, function(x, y) {
+            //     ctx.fillStyle = '#' + Math.random().toString(16).substr(2, 6).toUpperCase()
+            //     ctx.fillRect(x, y, 5, 5)
+            // })
+            // lastX = currentX
+            // lastY = currentY
+        }
+
+        canvas.onmouseup = function() {
+            canvas.onmousemove = null
+        }
+        canvas.onmouseout = function() {
+            canvas.onmousemove = null
+        }
+    }
+
+    canvas2.onmousedown = function(de) {
+        let lastX = de.clientX - canvas2Left
+        let lastY = de.clientY - canvas2Top
+        canvas2.onmousemove = function(me) {
+            let currentX = me.clientX - canvas2Left
+            let currentY = me.clientY - canvas2Top
+            pixelMouseEvent(lastX, lastY, currentX, currentY, function(x, y) {
+                ctx2.fillStyle = '#' + Math.random().toString(16).substr(2, 6).toUpperCase()
+                ctx2.fillRect(x, y, 5, 5)
+            })
+            lastX = currentX
+            lastY = currentY
+        }
+
+        canvas2.onmouseup = function() {
+            canvas2.onmousemove = null
+        }
+        canvas2.onmouseout = function() {
+            canvas2.onmousemove = null
+        }
+    }
+
+    function pixelMouseEvent(lastX, lastY, currentX, currentY, callback) {
+        
+        let dX = currentX - lastX, dY = currentY - lastY
+        let count = Math.sqrt(dX * dX + dY * dY), preX = dX/count, preY = dY/count
+        callback(currentX, currentY)
+        for(let i = 0;i < count;i++) {
+            callback(currentX + i*preX, currentY + i*preY)
+        }
+    }
+</script>
+</html>

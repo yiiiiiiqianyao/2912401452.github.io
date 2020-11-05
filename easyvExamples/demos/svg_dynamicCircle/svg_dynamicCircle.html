@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+        }
+        #wrap {
+            margin: 50px auto;;
+            width: 600px;
+            height: 400px;
+            background: #fff;;
+        }
+    </style>
+</head>
+<body>
+    <div id="wrap">
+    </div>
+</body>
+<script>
+    let wrap = document.getElementById('wrap')
+
+    let oSvg = createSVGTag('svg',  { xmlns: 'http://www.w3.org/2000/svg', width: '100%', height: '100%' })
+    let oG = createSVGTag('g', { style: 'cursor: pointer' })
+    let oCircle = createSVGTag('circle', { 
+        cx: 100, cy: 100, r: 50 , 
+        fill: 'transparent', stroke: '#f00', 'stroke-width': '5',
+        class: 'circleStyle'
+    })
+    let oLine1 = createSVGTag('line', { x1: 100, x2: 300, y1: 100, y2: 300, stroke: '#000' })
+
+    oG.appendChild(oLine1)
+    oG.appendChild(oCircle)
+    oSvg.appendChild(oG)
+
+    wrap.appendChild(oSvg)
+
+    oCircle.onmouseenter = function() {
+        elasticMove(oCircle, 50, 60)
+    }
+    oCircle.onmouseleave = function() {
+        elasticMove(oCircle, 60, 50)
+    }
+
+    /*
+    * 弹性运动函数
+    */
+    function elasticMove(targetDom, nowR, endR) {
+        targetDom.speed = 0
+        clearInterval(targetDom.timer)
+        targetDom.timer = setInterval(function() {
+            targetDom.speed += (endR - nowR)/6  //
+            targetDom.speed *= 0.85             // 减慢系数
+
+            if(Math.abs(endR - nowR) <= 1 && Math.abs(targetDom.speed) <= 1) { // 距离、速度小到一定程度的时候认为应该停止
+                clearInterval(targetDom.timer)
+                targetDom.setAttribute('r', endR)
+            }else {
+                nowR += targetDom.speed // 速度累加
+                targetDom.setAttribute('r', nowR)
+            } 
+        }, 30)
+    }
+
+    /*
+    * tagname 标签的名字 String
+    * attributes 标签拥有的属性 Array
+    */
+    function createSVGTag(tagname, attributes) {
+        let tag = document.createElementNS('http://www.w3.org/2000/svg', tagname)
+        for(let attr in attributes) {
+            tag.setAttribute(attr, attributes[attr])
+        }
+        return tag
+    }
+</script>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        html,body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            margin: 0;
+            justify-content: center;
+            align-items: center;
+            background-color: #ccc;
+        }
+        #can {
+            width: 600px;
+            height: 400px;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="can"></canvas>
+</body>
+<script>
+    let data = [ // 用来保存飞线的起点和终点
+        {
+            start: [10, 10],
+            snd: [500, 300]
+        }
+    ]
+
+    let canvas = document.getElementById('can')
+    canvas.width = 600
+    canvas.height = 400
+    let ctx = canvas.getContext('2d')
+    ctx.lineCap = 'round'
+
+    let step = 300  // 
+    let flyLineArray = [] // 储存飞线的数组
+    let nowTime = 0;
+    let preTime = 0;
+
+    createLines()
+
+    
+
+    function createLines() { // 创建飞线
+        const { points, distance } = this.createFlyLinePathPoints( [100, 100], [500, 300], step )
+       
+        let line = new flyLine({ points, distance, step, start: 0, ctx})
+       
+        animte()
+        function animte(time){
+            preTime = nowTime
+            nowTime = time
+            requestAnimationFrame(animte)
+            ctx.clearRect(0,0,600, 400)
+            nowTime && line.update(nowTime, preTime)
+           
+        }
+    }
+
+      
+    function createFlyLinePathPoints(start, end, step) { // 获取创建飞线的路径的分段点的数据
+        let points = [];
+        let { control, distance } = this.getControlPoint(start, end);
+        for (let i = 0; i <= step; i++) {
+            points.push(this.getBezier2Point(start, end, control, i / step));
+        }
+        return { points, distance }
+    }
+
+    function getControlPoint(start, end) { // 获取整条飞线方向的控制点 以及 距离
+        const mid = [(end[0] + start[0]) / 2, (end[1] + start[1]) / 2]; // 起始点和终止点的中点
+
+        let direction = [end[0] - start[0], end[1] - start[1]]; // 方向
+        const distance = Math.sqrt(direction[0] * direction[0] + direction[1] * direction[1]); // 距离
+        direction = [direction[0] / distance, direction[1] / distance]
+        // console.log(direction)
+        const normal = [
+            direction[0] < 0 ? -direction[1] : direction[1], 
+            direction[0] < 0 ? direction[0] : -direction[0]
+        ] // 为了得到向上的垂直向量
+
+        return {
+            control: [(normal[0] * distance) / 2 + mid[0], (normal[1] * distance) / 2 + mid[1]],
+            distance: distance,
+        }
+    }
+
+    function getBezier2Point(start, end, control, t) { // 根据分段和控制点来生成分段点的坐标数据
+        return [
+            (1 - t) * (1 - t) * start[0] + 2 * t * (1 - t) * control[0] + t * t * end[0],
+            (1 - t) * (1 - t) * start[1] + 2 * t * (1 - t) * control[1] + t * t * end[1],
+        ]
+    }
+
+    function flyLine(param = {}) { // 飞线对象
+        this.points = param.points
+        this.distance = param.distance
+        this.startColor = '#ff0000'
+        this.endColor = 'rgba(255,255,0,0.2)'
+        this.speed = 10
+        this.ratio = 10
+        this.width = 5
+        this.step = param.step
+        this.ctx = param.ctx
+        this.startIndex = param.start
+        this.initStart = this.startIndex
+        
+        let len = 60
+
+        this.update = function(nowTime, preTime) {
+            let showPoints = [] // 保存用来画线的数据
+
+            if (this.startIndex >= this.points.length) {
+                if (this.startIndex > this.points.length * 3) {
+                    // 为了防止失去环境过久导致飞线无法显示
+                    this.startIndex = this.initStart
+                } else {
+                    this.startIndex = this.startIndex - this.points.length - len
+                }
+            }
+
+            if(nowTime - preTime > 0){ 
+                this.startIndex += Math.ceil((5 * (nowTime - preTime)) / 100)*2
+            }else{
+                this.startIndex += 1
+            }
+
+            if (-len <= this.startIndex && this.startIndex < 0) { // 飞线的起始处
+                showPoints = this.points.slice(0, this.startIndex + len)
+            } else if (this.startIndex >= 0) { // 飞线的中间段
+                showPoints = this.points.slice(this.startIndex, this.startIndex + len)
+            } else { // 飞线的结尾（当最后的点位也结束之后）
+                showPoints = []
+            }
+            if(showPoints.length > 0) {
+                // 线的绘制方式
+                let gradient = this.ctx.createLinearGradient(
+                    showPoints[0][0],
+                    showPoints[0][1],
+                    showPoints[showPoints.length - 1][0],
+                    showPoints[showPoints.length - 1][1]
+                );
+                gradient.addColorStop(1, this.startColor);
+                gradient.addColorStop(0, this.endColor);
+                this.ctx.beginPath();
+                this.ctx.moveTo(showPoints[0][0], showPoints[0][1]);
+                for (let i = 1; i < showPoints.length; i++) {
+                    this.ctx.lineTo(showPoints[i][0], showPoints[i][1]);
+                }
+                this.ctx.strokeStyle = gradient
+                this.ctx.lineWidth = 4
+                this.ctx.stroke()
+            }
+
+            
+        }
+    }
+</script>
+</html>

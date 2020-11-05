@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - postprocessing - unreal bloom</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #fff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+        </style>
+        <script src="./three.js"></script>
+        <script src="./Earcut.js"></script>
+        <script src="./ShapeUtils.js"></script>
+        <script src="./OrbitControls.js"></script>
+        <script src="./LineSegmentsGeometry.js"></script>
+        <script src="./LineGeometry.js"></script>
+        <script src="./LineMaterial.js"></script>
+        <script src="./LineSegments2.js"></script>
+        <script src="./Line2.js"></script>
+
+        <script src="./EffectComposer.js"></script>
+        <script src="./RenderPass.js"></script>
+        <script src="./ShaderPass.js"></script>
+        <script src="./CopyShader.js"></script>
+        <script src="./LuminosityHighPassShader.js"></script>
+        <script src="./UnrealBloomPass.js"></script>
+
+	</head>
+	<body>
+		<div id="container"></div>
+        
+		<script>
+			var scene, camera, controls, pointLight, stats;
+			var composer, renderer, mixer, mesh, mesh2, shader_material;
+			var params = {
+				exposure: 1,
+				bloomStrength: 2,
+				bloomThreshold: 0.1,
+				bloomRadius: 0.1
+			};
+			var clock = new THREE.Clock()
+            var container = document.getElementById( 'container' )
+            // 数据池，为防止轮播时请求数据出现延迟，以及点击时快速进入下一级地图
+           
+            var height = 10
+            var MAP_SIZE = 1000, MAP_WIDTH = 1000, MAP_HEIGHT = 800
+            var radius = 500
+
+			renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } )
+			renderer.setPixelRatio( window.devicePixelRatio )
+            renderer.setClearColor('#000')
+            // renderer.setClearAlpha(0)
+			renderer.setSize( window.innerWidth, window.innerHeight )
+			renderer.toneMapping = THREE.ReinhardToneMapping
+			container.appendChild( renderer.domElement )
+
+			scene = new THREE.Scene()
+
+			camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 100000 )
+			camera.position.set( 1000, 1000, 1000 )
+			scene.add( camera )
+
+			controls = new THREE.OrbitControls( camera, renderer.domElement )
+			controls.maxPolarAngle = Math.PI * 0.5
+			
+
+             /**
+             * 光源设置
+             */
+            // 方向光1
+            var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9)
+            directionalLight.position.set(400, 200, 300)
+            directionalLight.layers.enable(1)
+            scene.add(directionalLight)
+
+			scene.add( new THREE.AmbientLight( 0x404040 ) )
+			
+            
+            var minLng = null, minLat = null, maxLng = null, maxLat = null
+
+            var mainMapGroup = new THREE.Group()
+            mainMapGroup.rotation.x = -Math.PI/2
+            scene.add(mainMapGroup)
+
+			var lineMat = new THREE.LineMaterial({
+                color: '#1E90FF',
+                linewidth: 1
+            })
+            lineMat.resolution.set(window.innerWidth,window.innerHeight);
+            var mat = new THREE.MeshPhongMaterial({
+                transparent: true, 
+                opacity: 0.7,
+                color: '#87CEFA',
+                side: THREE.DoubleSide, // FrontSide BackSide DoubleSide
+                // depthWrite: false,
+                // wireframe: true
+            })
+
+            var mat2 = new THREE.MeshPhongMaterial({
+                transparent: true, 
+                opacity: 1.0,
+                color: '#1E90FF',
+                side: THREE.DoubleSide, // FrontSide BackSide DoubleSide
+                // depthWrite: false,
+                // wireframe: true
+            })
+           
+
+            fetch('world2.json')
+            // fetch('mapData/100000.json')
+            .then((response) => {
+                return response.json();
+            })
+            .then((mapJson) => {
+                // console.log(mapJson)
+                var coor = getGeoExtent(mapJson.features)
+                minLng = coor.minLng, 
+                minLat = coor.minLat, 
+                maxLng = coor.maxLng, 
+                maxLat = coor.maxLat
+
+
+                mapJson.features.forEach((feature, index) => {
+                    if (!feature.geometry) return;
+                    const coordinates = feature.geometry.coordinates;
+                    switch (feature.geometry.type) {
+                        case 'Polygon':
+                                
+                            for (let points of coordinates) {
+                                let linePositions = [], _points = [], shapeVertices = []
+                                for (let point of points) {
+                                    let position = lglt2xyz(point);
+                                    linePositions.push(position.x);
+                                    linePositions.push(position.y);
+                                    linePositions.push(position.z);
+                                    _points.push([position.x, position.y, position.z])
+                                    shapeVertices.push(new THREE.Vector3(position.x, position.y, position.z))
+                                }
+
+                                const topLine = new THREE.Line2(
+                                    new THREE.LineGeometry().setPositions(linePositions),
+                                    lineMat
+                                );
+                                mainMapGroup.add(topLine)
+                                mainMapGroup.add(new THREE.Mesh(edgeFence(_points, 0.9, 1), mat))
+                                // mainMapGroup.add(new THREE.Mesh(edgeFence(_points, 1, 1.02), mat2))
+                                mainMapGroup.add(new THREE.Mesh(customPlaneGeometry(shapeVertices), mat))
+                            }
+                            
+                            break;
+                        case 'MultiPolygon':
+                            for(let coordinate of coordinates) {
+                                for (let points of coordinate) {
+                                let linePositions = [], _points = [], shapeVertices = []
+                                for (let point of points) {
+                                    let position = lglt2xyz(point);
+                                    linePositions.push(position.x);
+                                    linePositions.push(position.y);
+                                    linePositions.push(position.z);
+                                    _points.push([position.x, position.y, position.z])
+                                    shapeVertices.push(new THREE.Vector3(position.x, position.y, position.z))
+                                }
+                                const topLine = new THREE.Line2(
+                                    new THREE.LineGeometry().setPositions(linePositions),
+                                    lineMat
+                                );
+                                mainMapGroup.add(topLine)
+                                mainMapGroup.add(new THREE.Mesh(edgeFence(_points, 0.9, 1), mat))
+                                // mainMapGroup.add(new THREE.Mesh(edgeFence(_points, 1, 1.02), mat2))
+                                mainMapGroup.add(new THREE.Mesh(customPlaneGeometry(shapeVertices), mat))
+                            }
+                            }
+                       
+                            break;
+                        default:
+                            break;
+                    }
+                })
+                
+            })
+
+            var renderScene = new THREE.RenderPass( scene, camera );
+			var bloomPass = new THREE.UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+			bloomPass.threshold = params.bloomThreshold;
+			bloomPass.strength = params.bloomStrength;
+			bloomPass.radius = params.bloomRadius;
+			composer = new THREE.EffectComposer( renderer );
+			composer.setSize( window.innerWidth, window.innerHeight );
+			composer.addPass( renderScene );
+            composer.addPass( bloomPass );
+            
+            animate()
+
+			window.onresize = function () {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+				renderer.setSize( width, height );
+			};
+			function animate() {
+				requestAnimationFrame( animate )
+                renderer.render(scene, camera)
+                // composer.render()
+            }
+            // 获取地图数据，并进行缓存
+
+            function getGeoExtent(features) { // 计算数据的最大最小经纬度、最大最小墨卡托坐标以及墨卡托坐标的的多变形数组
+                let minLng = 180, maxLng = -180, minLat = 90, maxLat = -90
+                for (let feature of features) {
+                    if (feature.geometry) {
+                        if (feature.geometry.type === 'Polygon') {
+                            for (let points of feature.geometry.coordinates) {
+                                for (let point of points) {
+                                    minLng = minLng < point[0] ? minLng : point[0];
+                                    maxLng = maxLng > point[0] ? maxLng : point[0];
+                                    minLat = minLat < point[1] ? minLat : point[1];
+                                    maxLat = maxLat > point[1] ? maxLat : point[1];
+                                }
+                            }
+                        } else if (feature.geometry.type === 'MultiPolygon') {
+                            for (let polygonPoints of feature.geometry.coordinates) {
+                                for (let points of polygonPoints) {
+                                    for (let point of points) {
+                                        minLng = minLng < point[0] ? minLng : point[0];
+                                        maxLng = maxLng > point[0] ? maxLng : point[0];
+                                        minLat = minLat < point[1] ? minLat : point[1];
+                                        maxLat = maxLat > point[1] ? maxLat : point[1];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return { minLng, minLat, maxLng, maxLat }
+            }
+
+            function torad(deg){
+                return deg/180*Math.acos(-1);
+            }
+            /**
+             * 经纬度转xyz
+             * @param longitude 经度
+             * @param latitude 纬度
+             * @param radius 半径
+             */
+            function lglt2xyz(lnglat){
+                var lng = torad(lnglat[0]);
+                var lat = torad(lnglat[1]);
+                var x = radius*Math.cos(lat)*Math.cos(lng);
+                var y = radius*Math.cos(lat)*Math.sin(lng);
+                var z = radius*Math.sin(lat);
+                // var z = radius*Math.cos(lat)*Math.cos(lng);
+                // var x = radius*Math.cos(lat)*Math.sin(lng);
+                // var y = radius*Math.sin(lat);
+                return {x, y, z}
+            }
+
+            // Array: THREE.Vector3
+            function customPlaneGeometry(shapeVertices) {
+                let geometry = new THREE.BufferGeometry()
+                
+                const indices = [];
+                const vertices = [];
+                // const normals = [];
+                // const uvs = [];
+                
+                for ( let i = 0, l = shapeVertices.length; i < l; i ++ ) {
+                    const vertex = shapeVertices[ i ];
+                    vertices.push( vertex.x, vertex.y, vertex.z );
+                    // normals.push( 0, 0, 1 );
+                    // uvs.push( vertex.x, vertex.y ); // world uvs
+                }
+                const faces = ShapeUtils.triangulateShape( shapeVertices, [] );
+                for ( let i = 0, l = faces.length; i < l; i ++ ) {
+
+                    const face = faces[ i ];
+                    const a = face[ 0 ];
+                    const b = face[ 1 ];
+                    const c = face[ 2 ];
+                    indices.push( a, b, c );
+                }
+                
+                geometry.setIndex( indices );
+                geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+                // geometry.addAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
+                // geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+                
+                return geometry
+            }
+
+            function edgeFence(points, scaleIn, scaleOut) {
+
+                let vertices = [] // 顶点数组
+                let indices = []; // 索引数组
+                let uv = [];
+                let index = 0;
+                for (let i = 0; i < points.length - 1; i++) {
+                    let position = points[i];
+                    vertices.push(position[0]*scaleOut);
+                    vertices.push(position[1]*scaleOut);
+                    vertices.push(position[2]*scaleOut);
+                    indices.push(index);
+                    indices.push(index + 1);
+                    indices.push(index + 2);
+                    uv.push(0)
+                    uv.push(0)
+                    index++;
+
+                    vertices.push(position[0]*scaleIn);
+                    vertices.push(position[1]*scaleIn);
+                    vertices.push(position[2]*scaleIn);
+                    indices.push(index + 2);
+                    indices.push(index + 1);
+                    indices.push(index);
+                    uv.push(0)
+                    uv.push(1)
+                    index++;
+                }
+
+                let position = points[points.length - 1];
+
+                vertices.push(position[0]*scaleOut);
+                vertices.push(position[1]*scaleOut);
+                vertices.push(position[2]*scaleOut);
+                uv.push(0)
+                uv.push(0)
+
+                vertices.push(position[0]*scaleIn);
+                vertices.push(position[1]*scaleIn);
+                vertices.push(position[2]*scaleIn);
+
+                uv.push(0)
+                uv.push(1)
+
+                var geometry = new THREE.BufferGeometry();
+                geometry.setIndex(indices);
+                geometry.addAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.addAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+                return geometry
+
+            }
+            
+
+		</script>
+
+	</body>
+
+</html>
