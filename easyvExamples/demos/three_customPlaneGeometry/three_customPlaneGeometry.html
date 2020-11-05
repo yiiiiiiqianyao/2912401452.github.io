@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="shortcut icon" href="../favicon.ico" />
+    <link rel="bookmark" href="../favicon.ico" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+    <script src="./three.js"></script>
+    <script src="./Earcut.js"></script>
+    <script src="./ShapeUtils.js"></script>
+    <script src="./OrbitControls.js"></script>
+  </head>
+  <body></body>
+  <script type="x-shader/x-vertex" id="vertexShader">
+    varying vec2 vUv;
+    void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  </script>
+  <script type="x-shader/x-vertex" id="fragmentShader">
+    varying vec2 vUv;
+    uniform vec3 color;
+    void main() {
+      gl_FragColor = vec4(color, vUv.x);
+    }
+  </script>
+  <script>
+    var scene, camera, renderer, clock, controlller;
+    var shader_material
+
+    init();
+    animate();
+
+    // - Functions -
+    function init() {
+      scene = new THREE.Scene();
+      clock = new THREE.Clock();
+      camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100000
+      );
+      camera.position.set(50, 50, 50);
+      renderer = new THREE.WebGLRenderer({
+        antialias: true, // 开启抗锯齿处理
+        alpha: true,
+      });
+    //   renderer.setClearColor(new THREE.Color(0xffffff))
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // renderer.shadowMap.enabled = true
+
+      shader_material = new THREE.ShaderMaterial( {
+        uniforms: {
+          
+        },
+        vertexShader: document.getElementById( 'vertexShader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+        side:THREE.DoubleSide,              // 双面可见
+      } );
+
+      var material = new THREE.MeshNormalMaterial({
+        side: THREE.DoubleSide,
+        // wireframe: true
+      });
+      
+      let shapeVertices = [
+        new THREE.Vector3(0, 10, 0),
+        new THREE.Vector3(10, 10, 0),
+        new THREE.Vector3(10, 0, 0),
+        new THREE.Vector3(0, 0, 0),
+      ]
+
+      let shapeHoleVertices = [[
+        new THREE.Vector3(2, 8, 0),
+        new THREE.Vector3(8, 8, 0),
+        new THREE.Vector3(8, 2, 0),
+        new THREE.Vector3(2, 2, 0),
+      ]]
+      let MAX_VERTICEX = 0
+      let MIN_VERTICEX = 0
+      let MAX_VERTICEY = 0
+      let MIN_VERTICEY = 0
+
+      for(let i = 0;i < shapeVertices.length;i++) {
+        let v = shapeVertices[i]
+        MAX_VERTICEX = Math.max(MAX_VERTICEX, v.x)
+        MIN_VERTICEX = Math.min(MIN_VERTICEX, v.x)
+        MAX_VERTICEY = Math.max(MAX_VERTICEY, v.y)
+        MIN_VERTICEY = Math.min(MIN_VERTICEY, v.y)
+      }
+      // console.log(MAX_VERTICEX, MIN_VERTICEX, MAX_VERTICEY, MIN_VERTICEY)
+      var geometry = initBufferPlaneGeometry(shapeVertices, shapeHoleVertices, { MAX_VERTICEX, MIN_VERTICEX, MAX_VERTICEY, MIN_VERTICEY })
+      // var geometry = initBufferPlaneGeometry(shapeHoleVertices)
+     
+      var plane = new THREE.Mesh(geometry, shader_material)
+      // var plane = new THREE.Mesh(geometry, material)
+      
+      plane.rotation.x = -Math.PI/2
+      scene.add(plane)
+
+      var axisHelper = new THREE.AxesHelper(10);
+      scene.add(axisHelper);
+
+      controlller = new THREE.OrbitControls(camera, renderer.domElement);
+      document.body.appendChild(renderer.domElement);
+      window.onresize = onResize;
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+      controlller.update(clock.getDelta());
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function initBufferPlaneGeometry(shapeVertices, shapeHoles, bounding) {
+      let { MAX_VERTICEX, MIN_VERTICEX, MAX_VERTICEY, MIN_VERTICEY } = bounding
+      let geometry = new THREE.BufferGeometry()
+      let WIDTH = MAX_VERTICEX - MIN_VERTICEX
+      let HEIGHT = MAX_VERTICEY - MIN_VERTICEY
+
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+
+      // ShapeUtils.isClockWise 顺时针时返回 true / 逆时针时返回 false
+      // console.log(ShapeUtils.isClockWise( shapeVertices.reverse() ))
+      
+
+      if ( ShapeUtils.isClockWise( shapeVertices ) === false ) { // 保证 shapeVertices 为顺时针反方向
+        shapeVertices = shapeVertices.reverse();
+      }
+
+      for ( let i = 0, l = shapeHoles.length; i < l; i ++ ) { // 保证 shapeHole 为逆时针方向
+        const shapeHole = shapeHoles[ i ];
+        if ( ShapeUtils.isClockWise( shapeHole ) === true ) {
+          shapeHoles[ i ] = shapeHole.reverse();
+        }
+      }
+
+
+      const faces = ShapeUtils.triangulateShape( shapeVertices, shapeHoles );
+
+      for ( let i = 0, l = shapeHoles.length; i < l; i ++ ) {
+        const shapeHole = shapeHoles[ i ];
+        shapeVertices = shapeVertices.concat( shapeHole );
+      }
+      
+      for ( let i = 0, l = shapeVertices.length; i < l; i ++ ) {
+        const vertex = shapeVertices[ i ];
+        vertices.push( vertex.x, vertex.y, vertex.z );
+        // let nv = vertex.clone().normalize()
+        normals.push( 0, 0, 1 );
+        // normals.push( nv.x, nv.y, nv.z );
+        uvs.push( (vertex.x - MIN_VERTICEX)/WIDTH, (vertex.y - MIN_VERTICEY)/HEIGHT ); // world uvs
+      }
+      
+      for ( let i = 0, l = faces.length; i < l; i ++ ) {
+
+        const face = faces[ i ];
+        const a = face[ 0 ];
+        const b = face[ 1 ];
+        const c = face[ 2 ];
+        indices.push( a, b, c );
+      }
+      
+      geometry.setIndex( indices );
+      geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+      geometry.addAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
+      geometry.addAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
+      
+      return geometry
+    }
+
+   
+  </script>
+</html>

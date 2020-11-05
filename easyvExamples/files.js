@@ -8,7 +8,8 @@ var files = {
 		"three_waterBall",
 		"three_simpleGrayPass",
 		"three_autoScaleSprite",
-		"three_cityCircle"
+		"three_cityCircle",
+		"three_customPlaneGeometry"
 	],
 	"canvas": [
 		"canvas_rose",
