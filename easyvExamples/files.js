@@ -9,7 +9,8 @@ var files = {
 		"three_simpleGrayPass",
 		"three_autoScaleSprite",
 		"three_cityCircle",
-		"three_customPlaneGeometry"
+		"three_customPlaneGeometry",
+		"three_geojsonBuilding"
 	],
 	"canvas": [
 		"canvas_rose",
