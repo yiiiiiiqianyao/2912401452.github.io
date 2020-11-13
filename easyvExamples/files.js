@@ -10,7 +10,8 @@ var files = {
 		"three_autoScaleSprite",
 		"three_cityCircle",
 		"three_customPlaneGeometry",
-		"three_geojsonBuilding"
+		"three_geojsonBuilding",
+		"three_raisingCode"
 	],
 	"canvas": [
 		"canvas_rose",
