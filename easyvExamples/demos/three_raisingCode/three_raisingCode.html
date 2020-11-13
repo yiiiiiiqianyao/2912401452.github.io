@@ -163,13 +163,7 @@
         cloud.add(plane)
       }
       setInterval(() => {
-        if(cloud) {
-          cloud.children.map(plane => {
-            plane.material.uniforms.random.value = Math.random()
-            // let s = Math.floor(Math.random()*1000) + 1
-            // plane.geometry.attributes.uv.array = plane.geometry.attributes.uv.array.map(e => e=s)
-          })
-        }
+        shader_material && (shader_material.uniforms.random.value = Math.random())
       }, 100)
       // --------
 
