@@ -12,7 +12,8 @@ var files = {
 		"three_customPlaneGeometry",
 		"three_geojsonBuilding",
 		"three_raisingCode",
-		"three_centerLoader"
+		"three_centerLoader",
+		"three_sweepPass"
 	],
 	"canvas": [
 		"canvas_rose",

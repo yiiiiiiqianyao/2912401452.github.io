@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>sweepPass</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+    <script src="./three.js"></script>
+    <script src="./OrbitControls.js"></script>
+    <script src="./stats.min.js"></script>
+    <script src="./EffectComposer.js"></script>
+    <script src="./RenderPass.js"></script>
+    <script src="./ShaderPass.js"></script>
+    <script src="./CopyShader.js"></script>
+    <script src="./SweepPass.js"></script>
+  </head>
+  <body></body>
+  <script>
+    var scene, camera, renderer, clock, controller, stats
+    var composer, sweepPass
+    init();
+    animate();
+
+    // - Functions -
+    function init() {
+      scene = new THREE.Scene();
+      clock = new THREE.Clock();
+      camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(30, 30, 30)
+      renderer = new THREE.WebGLRenderer({
+        antialias: true, // 开启抗锯齿处理
+        alpha: true,
+      });
+        renderer.setClearColor(0x000000) // set sky color
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio)
+
+      var axisHelper = new THREE.AxesHelper(10);
+      scene.add(axisHelper);
+     
+      var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      directionalLight.position.set(400, 200, 300);
+      scene.add(directionalLight);
+      // 方向光2
+      var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+      directionalLight2.position.set(-400, -200, -300);
+      scene.add(directionalLight2);
+      //环境光
+      var ambient = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambient);
+
+      stats = new Stats()
+      document.body.appendChild( stats.dom );
+
+      // --------
+      var geometry = new THREE.BoxBufferGeometry( 1, 1, 1 );
+      var material = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
+      var cube = new THREE.Mesh( geometry, material );
+      scene.add( cube );
+
+      let r = 20
+      for(let i = 0;i < 100;i++) {
+        var m = new THREE.Mesh(geometry.clone(), createRandomMaterial())
+        m.position.set(r*(Math.random()-0.5), r*(Math.random()-0.5), r*(Math.random()-0.5))
+        m.rotation.x = Math.PI * Math.random()
+        m.rotation.y = Math.PI * Math.random()
+        m.rotation.z = Math.PI * Math.random()
+        scene.add(m)
+      }
+
+      var renderScene = new THREE.RenderPass( scene, camera )
+      sweepPass = new THREE.SweepPass(scene, camera)
+      composer = new THREE.EffectComposer( renderer );
+      let scale = window.devicePixelRatio * 2 // 用于弥补后处理带来的图像精度损失
+      composer.setSize( window.innerWidth * scale, window.innerHeight * scale );
+      
+      composer.addPass( renderScene )
+      composer.addPass( sweepPass )
+
+      console.log(sweepPass)
+      // --------
+
+      controller = new THREE.OrbitControls(camera, renderer.domElement);
+      document.body.appendChild(renderer.domElement);
+      window.onresize = onResize;
+      
+    }
+
+    function createRandomMaterial() {
+        return new THREE.MeshPhongMaterial({color: Math.floor(Math.random()*(1<<24))})
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      composer.render()
+      stats.update();
+      controller.update(clock.getDelta());
+      if(sweepPass) {
+        if(sweepPass.sweepMaterial.uniforms.time.value > 3) {
+          sweepPass.sweepMaterial.uniforms.time.value = -3
+        }
+        sweepPass.sweepMaterial.uniforms.time.value += 0.04
+      }
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  </script>
+</html>
