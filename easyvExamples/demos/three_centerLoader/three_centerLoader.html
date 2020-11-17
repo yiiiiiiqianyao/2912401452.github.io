@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+        .wrap {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            border: 1px solid;
+            border-radius: 10px;
+            padding: 10px;
+        }
+    </style>
+    <script src="./three.js"></script>
+    <script src="./OrbitControls.js"></script>
+    <script src="./GLTFLoader.js"></script>
+</head>
+<body>
+    <div class="wrap">
+        <button onclick="addSmall()">add small model</button>
+        <button onclick="addHuge()">add huge model</button>
+    </div>
+</body>
+<script>
+    var scene, camera, renderer, controller
+    var loader = new THREE.GLTFLoader()
+    init()
+    animate()
+
+    // - Functions -
+    function init(){
+        scene = new THREE.Scene()
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000000)
+        camera.position.set(10, 10, 10)
+        renderer = new THREE.WebGLRenderer({    
+            antialias:true, // 开启抗锯齿处理
+            alpha:true
+        })
+        renderer.setSize(window.innerWidth,window.innerHeight)
+        renderer.setClearColor(0xffffff)
+        var axesHelper = new THREE.AxesHelper( 100000 );
+        scene.add( axesHelper );
+       
+        /**
+            * 光源设置
+            */
+        // 方向光1
+        var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight.position.set(400, 200, 300);
+        // directionalLight.castShadow = true
+        scene.add(directionalLight);
+        // 方向光2
+        var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight2.position.set(-400, -200, -300);
+        scene.add(directionalLight2);
+        //环境光
+        var ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+
+        controller = new THREE.OrbitControls(camera,renderer.domElement)
+        document.body.appendChild(renderer.domElement)
+        window.onresize = onResize
+    }
+
+    function addSmall() {
+        console.log('addSmall')
+        loader.load('./Soldier.glb', function(gltf) {
+            let model = new THREE.Group()
+            
+            model.add(gltf.scene)
+            
+            scene.add(model)
+
+            setModelCenter(gltf.scene)
+
+        })
+    }
+
+    function addHuge() {
+        console.log('addHuge')
+        loader.load('./huge.glb', function(gltf) {
+            let model = new THREE.Group()
+            
+            model.add(gltf.scene)
+            
+            scene.add(model)
+
+            setModelCenter(gltf.scene)
+        })
+    }
+
+    function ang2rad(ang){
+        // 角度变弧度
+        return (ang * Math.PI) / 180;
+    };
+
+    function setModelCenter(model) {
+        model.updateMatrixWorld();
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3()).length();
+        const boxSize = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+  
+        model.position.x += model.position.x - center.x;
+        model.position.y += model.position.y - center.y;//修改center.y可以设置模型整体上下偏移
+        model.position.z += model.position.z - center.z;
+        camera.position.copy(center);
+        if (boxSize.x > boxSize.y) { // 判断模型的宽高哪个更大
+            camera.position.z = boxSize.x * -2.85;
+        } else {
+            camera.position.z = boxSize.y * -2.85;
+        }
+        camera.lookAt(0, 0, 0);
+    }
+
+    function animate(){
+        requestAnimationFrame(animate)
+        renderer.render(scene, camera)
+        controller.update()
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+</script>
+</html>
