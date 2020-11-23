@@ -13,7 +13,8 @@ var files = {
 		"three_geojsonBuilding",
 		"three_raisingCode",
 		"three_centerLoader",
-		"three_sweepPass"
+		"three_sweepPass",
+		"three_circleSweepPass"
 	],
 	"canvas": [
 		"canvas_rose",
