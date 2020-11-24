@@ -14,7 +14,8 @@ var files = {
 		"three_raisingCode",
 		"three_centerLoader",
 		"three_sweepPass",
-		"three_circleSweepPass"
+		"three_circleSweepPass",
+		"three_depthFogPass"
 	],
 	"canvas": [
 		"canvas_rose",
