@@ -326,6 +326,7 @@
                 // 计算垂直偏移距离
 
                 let l = d / Math.sin(dWAngle / 2);
+                if(Math.abs(l) > 2*d) l = d; // 限制异常数据
                 let panX = l * Math.cos(θ) + p.x,
                     panY = l * Math.sin(θ) + p.y; // 夹角（内角）平分线的点
 
