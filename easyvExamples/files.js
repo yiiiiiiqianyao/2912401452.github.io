@@ -16,7 +16,8 @@ var files = {
 		"three_sweepPass",
 		"three_circleSweepPass",
 		"three_depthFogPass",
-		"three_depthFogPass2"
+		"three_depthFogPass2",
+		"three_customClip"
 	],
 	"canvas": [
 		"canvas_rose",

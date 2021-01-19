@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      button {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px;
+        font-size: 20px;
+      }
+
+      button:hover {
+        cursor: pointer;
+        color: #0ff;
+      }
+    </style>
+    <script src="./three.js"></script>
+    <script src="./OrbitControls.js"></script>
+    <script src="./TransformControls.js"></script>
+    <script src="./stats.min.js"></script>
+  </head>
+  <body>
+    <div style="position: absolute;top: 10px;right: 10px">
+      <button onclick="setTranslate()">translate</button>
+      <br>
+      <button onclick="setRotate()">rotate</button>
+    </div>
+  </body>
+  <script type="x-shader/x-vertex" id="vertexShader">
+    varying vec2 vUv;
+    varying vec3 worldPos;
+    void main() {
+        vUv = uv;
+        worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+        //worldPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }</script>
+  <script type="x-shader/x-vertex" id="fragmentShader">
+    varying vec2 vUv;
+    uniform vec3 color;
+    varying vec3 worldPos;
+    uniform vec3 clipNormal;
+    uniform vec3 origin;
+    void main() {
+      // 根据计算的片元点到法线的距离来判断（默认从原点出发）
+    
+      float d = dot(worldPos - origin, normalize(clipNormal));
+      //float d = dot(worldPos - origin , normalize(clipNormal - origin ));
+      
+      if(d > 0.0) {
+        gl_FragColor = vec4(color, 1.0);
+      }else {
+        discard;
+      }
+      //gl_FragColor = vec4(color, d > 0.0 ? 1.0: 0.0);
+      gl_FragColor = vec4(vec3(d), 1.0);
+    }
+  </script>
+ 
+  <script>
+    var scene, camera, renderer, clock, controller, stats
+    var shader_material, plane, normal, transformControl
+    var normalBall, cube
+
+    init();
+    animate();
+
+    // - Functions -
+    function setTranslate() {
+      transformControl.setMode("translate")
+    }
+
+    function setRotate() {
+      transformControl.setMode("rotate")
+    }
+
+    function init() {
+      scene = new THREE.Scene();
+      clock = new THREE.Clock();
+      camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(10, 10, 10)
+      renderer = new THREE.WebGLRenderer({
+        antialias: true, // 开启抗锯齿处理
+        alpha: true,
+      });
+      renderer.setClearColor(0xbfd1e5) // set sky color
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio)
+      // renderer.shadowMap.enabled = true
+
+      normalBall = new THREE.Mesh(
+        new THREE.SphereBufferGeometry(0.2, 12, 12),
+        new THREE.MeshBasicMaterial({
+          color: "red",
+          depthTest: false,
+          transparent: true, 
+        })
+      )
+      normalBall.position.z = 1
+      normalBall.renderOrder = 1
+      scene.add(normalBall)
+
+      plane = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(10, 10),
+        new THREE.MeshBasicMaterial({ 
+          color: "#0ff", 
+          side: THREE.DoubleSide, 
+          transparent: true, 
+          opacity: 0.3,
+          depthWrite: false
+        })
+        )
+       
+      scene.add(plane)
+      normal = new THREE.Vector3(...plane.geometry.attributes.normal.array.slice(0, plane.geometry.attributes.normal.itemSize))
+      shader_material = new THREE.ShaderMaterial( {
+        uniforms: {
+          clipNormal: {
+            // value: new THREE.Vector3(0, 0, 1)
+            value: normal
+          },
+          color: {
+            value: new THREE.Color(1.0, 1.0, 0.0)
+          },
+          origin: {
+            value: plane.position.clone()
+          }
+        },
+        vertexShader: document.getElementById( 'vertexShader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+      })
+
+
+      var axisHelper = new THREE.AxesHelper(10);
+      scene.add(axisHelper);
+     
+      //环境光
+      var ambient = new THREE.AmbientLight(0x404040, 0.6);
+      scene.add(ambient);
+
+      stats = new Stats()
+      document.body.appendChild( stats.dom );
+
+      // --------
+      var geometry = new THREE.BoxBufferGeometry( 2, 2, 2 );
+      var material = new THREE.MeshPhongMaterial( {color: 0x00ff00} );
+      cube = new THREE.Mesh( geometry, shader_material );
+      scene.add( cube );
+      
+      // --------
+
+      controller = new THREE.OrbitControls(camera, renderer.domElement);
+      document.body.appendChild(renderer.domElement);
+      window.onresize = onResize;
+
+      transformControl = new THREE.TransformControls( camera, renderer.domElement );
+      transformControl.attach(plane)
+      transformControl.addEventListener( 'mouseDown', function() {
+
+        controller.enabled = false
+      });
+      transformControl.addEventListener( 'mouseUp', function() {
+
+        controller.enabled = true
+      });
+      transformControl.addEventListener( 'change', function() {
+        
+        plane.updateMatrix()
+
+        shader_material.uniforms.origin.value = plane.position.clone()
+       
+        // shader_material.uniforms.clipNormal.value = normal.clone().applyMatrix4(plane.matrix)
+ 
+        shader_material.uniforms.clipNormal.value = normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(plane.matrix))
+
+        // .getInverse - 求逆
+        // .transpose - 转置
+
+        normalBall.position.copy(normal.clone().applyMatrix4(plane.matrix))
+      });
+      scene.add( transformControl );
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+      stats.update();
+      controller.update(clock.getDelta());
+      // cube.rotation.y += 0.01
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  </script>
+</html>
