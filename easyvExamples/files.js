@@ -19,7 +19,8 @@ var files = {
 		"three_depthFogPass2",
 		"three_customClip",
 		"three_dissolve1",
-		"three_dissolve2"
+		"three_dissolve2",
+		"three_dissolve3"
 	],
 	"canvas": [
 		"canvas_rose",
