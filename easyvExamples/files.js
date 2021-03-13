@@ -20,7 +20,8 @@ var files = {
 		"three_customClip",
 		"three_dissolve1",
 		"three_dissolve2",
-		"three_dissolve3"
+		"three_dissolve3",
+		"three_projTexture"
 	],
 	"canvas": [
 		"canvas_rose",
