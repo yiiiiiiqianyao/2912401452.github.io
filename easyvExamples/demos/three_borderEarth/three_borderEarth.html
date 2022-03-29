@@ -77,7 +77,7 @@
             // 方向光1
             var directionalLight = new THREE.DirectionalLight(0xffffff, 0.9)
             directionalLight.position.set(400, 200, 300)
-            directionalLight.layers.enable(1)
+            directionalLight.layers.enable(0)
             scene.add(directionalLight)
 
 			scene.add( new THREE.AmbientLight( 0x404040 ) )
@@ -94,7 +94,7 @@
                 linewidth: 1
             })
             lineMat.resolution.set(window.innerWidth,window.innerHeight);
-            var mat = new THREE.MeshPhongMaterial({
+            var mat = new THREE.MeshBasicMaterial({
                 transparent: true, 
                 opacity: 0.7,
                 color: '#87CEFA',
@@ -103,7 +103,7 @@
                 // wireframe: true
             })
 
-            var mat2 = new THREE.MeshPhongMaterial({
+            var mat2 = new THREE.MeshBasicMaterial({
                 transparent: true, 
                 opacity: 1.0,
                 color: '#1E90FF',
